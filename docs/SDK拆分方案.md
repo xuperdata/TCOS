@@ -2,7 +2,7 @@
 
 
 
-## 背景
+## 拆分设计
 
 从[《超级链SDK结构》](./超级链SDK结构.pdf)可以了解当前SDK的架构。
 
@@ -75,7 +75,7 @@ MesaTEE-FNS调用对应的function计算完成之后，获得计算的结果文�
 
 ## 详细接口
 
-#### XuperSDK-RPC
+### XuperSDK-RPC
 
 ```
 typedef signed char GoInt8;
@@ -296,9 +296,7 @@ struct TransferByPlatform_return {
 extern struct TransferByPlatform_return TransferByPlatform(GoString p0, GoString p1, GoString p2, GoString p3, GoString p4, GoString p5, GoString p6, GoString p7);
 ```
 
-
-
-#### XuperSDK-Crypto
+### XuperSDK-Crypto
 
 crypto的对RPC提供的接口只有计算签名，输出是私钥和消息，返回签名字符串。 这个接口通过动态链接库提供给cgo使用。
 
@@ -306,7 +304,7 @@ crypto的对RPC提供的接口只有计算签名，输出是私钥和消息，�
 fn sign(sk: PrivateKey, msg: &[u8]) -> Result<Vec<u8>>
 ````
 
-# 开发安排
+## 开发安排
 
 1. XuperSDK-Crypto进入TEE,   5.12-5.13
 2. XuperSDK-RPC CAPI封装以及切换签名到XuperSDK-Crypto,   5.14 - 5.15 
