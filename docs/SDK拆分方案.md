@@ -21,8 +21,8 @@ SDK未来在3CO项目中会被TEE外面和TEE内部使用到，因此需要保�
 
 功能解释：
 
-* XuperSDK-RPC:  组装交易，发送交易
-* XuperSDK-Crypto： 通过Hash生成TXID，交易签名
+* XuperSDK-RPC:  组装交易，发送交易，作为一个c-lib存在，被rust通过FFI调用
+* XuperSDK-Crypto： 通过Hash生成TXID，交易签名。作为一个libenclave.so存在，被RPC模块加载。
 * TEESDK: 负责跟KMS通信，加密交易的敏感字段；
 
 在解释之前，先增加几个定义：
