@@ -42,7 +42,6 @@ MesaTEE-FNS调用对应的function计算完成之后，获得计算的结果文�
 具体流程如下
 
 1. FNS 先调用TEESDK，加密敏感数据；
-
 2. [Ocall] InitConfig初始化SDK实例；
 3. 开始组装交易
 
