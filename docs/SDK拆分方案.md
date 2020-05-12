@@ -39,13 +39,13 @@ SDK未来在3CO项目中会被TEE外面和TEE内部使用到，因此需要保�
 
 MesaTEE-FNS调用对应的function计算完成之后，获得计算的结果文件，计算结果的存证信息(DC).  
 
-具体流程如下：
+具体流程如下
 
-> a. GetAccountFromFile: 从本地文件恢复密码（这里也可以改为从内存中加载）
+> a. [Ocall] GetAccountFromFile: 从本地文件恢复密码（这里也可以改为从内存中加载）
 >
-> b. PreExecWithSelecUTXO:   
+> b. [Ocall] PreExecWithSelecUTXO:   
 >
-> c. GenCompleteTxAndPost
+> c. [Ocall] GenCompleteTxAndPost
 >
 > > i. GenComplianceCheckTx 
 > >
