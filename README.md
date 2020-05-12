@@ -1,2 +1,3 @@
-# 3co
-Collaborative Confidental Computation = 3CO   
+# Collaborative Confidential Computation (3CO)
+  
+ 
