@@ -304,10 +304,22 @@ crypto的对RPC提供的接口只有计算签名，输出是私钥和消息，�
 fn sign(sk: PrivateKey, msg: &[u8]) -> Result<Vec<u8>>
 ````
 
+在XuperSDK里面，目前超级链的crypto是通过接口的形式暴露的具体的加密库方法。因此，这里考虑根据编译标签来加载对应的密码学库。
+
+```
+						   xchain/crypto   <----         ---->   xchain-rust-crypto			
+																		|				|							
+															 	 base.CryptoClient
+```
+
+其中base.CryptoClient定义在github.com/xuperchain/xuperchain/core/crypto/client/base.
+
+
+
 ## 开发安排
 
 1. XuperSDK-Crypto进入TEE,   5.12-5.13
-2. XuperSDK-RPC CAPI封装以及切换签名到XuperSDK-Crypto,   5.14 - 5.15 
+2. XuperSDK-RPC CAPI封装以及切换签名到XuperSDK-Crypto,   5.14 - 5.18
 3. TEESDK进TEE；   @zhiyu
-4. demo开发；  5.18号
+4. demo开发；  5.22号
 5. 跟mesatee联调   @jiwen @zhiyu
