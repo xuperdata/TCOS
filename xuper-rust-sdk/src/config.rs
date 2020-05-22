@@ -25,3 +25,11 @@ pub struct CommConfig {
     #[serde(rename = "crypto")]
     pub crypto: String,
 }
+
+pub fn load_config(path: std::path::PathBuf) -> Result<CommConfig> {
+    let f = std::fs::File::open(path)?;
+    let mut contents = String::new();
+    f.read_to_string(&mut contents)?;
+    let yaml: CommConfig = serde_yaml::from_str(&contents);
+    yaml
+}
