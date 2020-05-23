@@ -16,8 +16,12 @@ pub struct ComplianceCheckConfig {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommConfig {
-    #[serde(rename = "endorseServiceHost")]
-    pub endorse_service_host: String,
+    #[serde(rename = "node")]
+    pub node_port: String,
+    #[serde(rename = "nodePort")]
+    pub node_port: u16,
+    #[serde(rename = "endorsePort")]
+    pub endorse_port: u16,
     #[serde(rename = "complianceCheck")]
     pub compliance_check: ComplianceCheckConfig,
     #[serde(rename = "minNewChainAmount")]
@@ -26,10 +30,13 @@ pub struct CommConfig {
     pub crypto: String,
 }
 
-pub fn load_config(path: std::path::PathBuf) -> Result<CommConfig> {
-    let f = std::fs::File::open(path)?;
-    let mut contents = String::new();
-    f.read_to_string(&mut contents)?;
-    let yaml: CommConfig = serde_yaml::from_str(&contents);
-    yaml
+lazy_static! {
+    pub static ref CONFIG: RwLock<CommConfig> = {
+        let path = std::path::PathBuf(std::env::var("CONFIG").unwrap());
+        let f = std::fs::File::open(path).expect("file not found");
+        let mut contents = String::new();
+        f.read_to_string(&mut contents).expect("read_to_string");
+        let yaml: CommConfig = serde_yaml::from_str(&contents).expect("serde_yaml");
+        RwLock::new(yaml)
+    };
 }

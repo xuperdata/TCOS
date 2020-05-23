@@ -1,11 +1,36 @@
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
+/// 唯一可以调用xchain_crypto的地方
 use serde::ser::{Serialize, SerializeSeq, Serializer};
-use xchain_crypto::errors::*;
+use crate::errors::*;
 
 use crate::protos::xchain;
 
 use rand_core::SeedableRng;
+
+/// 加载钱包地址或者加载enclave
+pub struct Account {
+    contract_name: String,
+    contract_account: String,
+    address: String,
+}
+
+impl Account {
+    pub fn new(path: std::path::PathBuf) -> Self {
+        //加载私钥: features: normal | sgx | trustzone
+    }
+
+    pub fn sign() {
+
+    }
+
+    pub fn verify() {
+
+    }
+
+    // TODO  把其他所有crypto相关的操作移动到这里
+}
+
 
 pub fn set_seed() -> Result<SeedableRng> {
     let seed = xchain_crypto::hdwallet::rand::generate_seed_with_strength_and_keylen(
