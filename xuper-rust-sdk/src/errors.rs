@@ -97,9 +97,9 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-impl From<xchain_crypto::Error> for Error {
+impl From<xchain_crypto::errors::Error> for Error {
     #[inline]
-    fn from(err: xchain_crypto::Error) -> Error {
+    fn from(err: xchain_crypto::errors::Error) -> Error {
         Error::new(ErrorKind::CryptoError, err)
     }
 }

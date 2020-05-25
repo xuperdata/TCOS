@@ -1,11 +1,9 @@
+use crate::errors::*;
+use crate::protos::xchain;
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
 /// 唯一可以调用xchain_crypto的地方
 use serde::ser::{Serialize, SerializeSeq, Serializer};
-use crate::errors::*;
-
-use crate::protos::xchain;
-
 use rand_core::SeedableRng;
 
 /// 加载钱包地址或者加载enclave
@@ -20,21 +18,16 @@ impl Account {
         //加载私钥: features: normal | sgx | trustzone
     }
 
-    pub fn sign() {
+    pub fn sign() {}
 
-    }
-
-    pub fn verify() {
-
-    }
+    pub fn verify() {}
 
     // TODO  把其他所有crypto相关的操作移动到这里
 }
 
-
-pub fn set_seed() -> Result<SeedableRng> {
+pub fn set_seed() -> Result<MyRng> {
     let seed = xchain_crypto::hdwallet::rand::generate_seed_with_strength_and_keylen(
-       xchain_crypto::hdwallet::rand::KeyStrength::HARD,
+        xchain_crypto::hdwallet::rand::KeyStrength::HARD,
         64,
     )?;
     let same_seed = MyRngSeed(&seed);
@@ -44,10 +37,9 @@ pub fn set_seed() -> Result<SeedableRng> {
 pub fn get_nonce() -> String {
     let t = super::consts::now_as_secs();
     let m: u32 = 100000000;
-    let r =  set_seed()?.next_u32() % m;
-    std::fmt::format!("{}{:08}", t, r)
+    let r = set_seed()?.next_u32() % m;
+    std::fmt::format("{}{:08}", t, r)
 }
-
 
 const N: usize = 64;
 pub struct MyRngSeed(pub [u8; N]);
@@ -74,16 +66,15 @@ impl SeedableRng for MyRng {
 }
 
 #[test]
-fn test_myrng () {
-    let same_seed = MyRngSeed( [42 as u8; 64] );
-    let mut pseudo_rng = SeedableRng::from_seed( same_seed );
-    let rnd_nmr= pseudo_rng.gen_range(0, 90);
+fn test_myrng() {
+    let same_seed = MyRngSeed([42 as u8; 64]);
+    let mut pseudo_rng = SeedableRng::from_seed(same_seed);
+    let rnd_nmr = pseudo_rng.gen_range(0, 90);
     println!("{}", rnd_nmr);
 }
 
-
 pub struct TransactionWrapper {
-    tx: xchain:Transaction,
+    tx: xchain::Transaction,
     include_signs: bool,
 }
 
@@ -97,7 +88,7 @@ impl Serialize for TransactionWrapper {
                 serializer.serialize_bytes(&ti.ref_txid)?;
             }
             serializer.serialize_i32(ti.ref_offset())?;
-            if tx_inputs.from_addr.len() > 0 {
+            if ti.from_addr.len() > 0 {
                 serializer.serialize_bytes(&ti.from_addr)?;
             }
             serializer.serialize_bytes(&ti.amount)?;
@@ -107,27 +98,27 @@ impl Serialize for TransactionWrapper {
             serializer.serialize_bytes(&self.tx.desc)?;
         }
         serializer.serialize_bytes(&self.tx.nonce.as_bytes())?;
-        serializer.serialize_i64(ti.timestamp)?;
-        serializer.serialize_i32(ti.version)?;
+        serializer.serialize_i64(self.tx.timestamp)?;
+        serializer.serialize_i32(self.tx.version)?;
 
         // 读写集
         for tie in self.tx.tx_inputs_ext {
             serializer.serialize_bytes(&tie.bucket.as_bytes())?;
             if tie.key.len() > 0 {
-                serialier.serialize_bytes(&tie.key)?;
+                serializer.serialize_bytes(&tie.key)?;
             }
             if tie.ref_txid.len() > 0 {
-                serialier.serialize_bytes(&tie.ref_txid)?;
+                serializer.serialize_bytes(&tie.ref_txid)?;
             }
-            serialier.serialize_i32(tie.ref_offset)?;
+            serializer.serialize_i32(tie.ref_offset)?;
         }
         for tie in self.tx.tx_outputs_ext {
             serializer.serialize_bytes(&tie.bucket.as_bytes())?;
             if tie.key.len() > 0 {
-                serialier.serialize_bytes(&tie.key)?;
+                serializer.serialize_bytes(&tie.key)?;
             }
             if tie.value.len() > 0 {
-                serialier.serialize_bytes(&tie.value)?;
+                serializer.serialize_bytes(&tie.value)?;
             }
         }
 
@@ -136,7 +127,7 @@ impl Serialize for TransactionWrapper {
             seq.serialize_elem(elem)?;
         }
         seq.end();
-        serialier.serialize_bytes(&self.tx.initiator.as_bytes())?;
+        serializer.serialize_bytes(&self.tx.initiator.as_bytes())?;
 
         let mut seq = serializer.serialize_seq(Some(self.tx.auth_require.len()))?;
         for elem in self.tx.auth_require {
@@ -147,19 +138,21 @@ impl Serialize for TransactionWrapper {
         if self.include_signs {
             let mut seq = serializer.serialize_seq(Some(self.tx.initiator_signs.len()))?;
             for elem in self.tx.initiator_signs {
-                req.serialize_elem(elem)?;
+                seq.serialize_elem(elem)?;
             }
+            seq.end();
             let mut seq = serializer.serialize_seq(Some(self.tx.auth_require_signs.len()))?;
             for elem in self.tx.auth_require_signs {
-                req.serialize_elem(elem)?;
+                seq.serialize_elem(elem)?;
             }
             if self.tx.xuper_sign.is_some() {
-                req.serialize_elem(self.tx.xuper_sign);
+                seq.serialize_elem(self.tx.xuper_sign);
             }
+            seq.end();
         }
 
-        serialier.serialize_bool(self.tx.coinbase)?;
-        serialier.serialize_bool(self.tx.autogen)?;
+        serializer.serialize_bool(self.tx.coinbase)?;
+        serializer.serialize_bool(self.tx.autogen)?;
         if self.tx.version > 2 {
             let mut hd_info = serializer.serialize_struct("HD_Info", 2)?;
             hd_info.serialize_field("hd_public_key", &self.tx.HD_info.hd_public_key)?;
@@ -170,20 +163,19 @@ impl Serialize for TransactionWrapper {
 }
 
 pub fn make_tx_digest_hash(tx: &xchain::Transaction) -> Result<Vec<u8>> {
-    let d = TransactionWrapper{
+    let d = TransactionWrapper {
         tx: tx,
         include_signs: false,
     };
     let d = serde_json::to_string(d)?;
-    xchain_crypto::hash::double_sha256(d)
+    xchain_crypto::hash::hash::double_sha256(d)
 }
 
 pub fn make_transaction_id(tx: &xchain::Transaction) -> Result<Vec<u8>> {
-    let d = TransactionWrapper{
+    let d = TransactionWrapper {
         tx: tx,
         include_signs: true,
     };
     let d = serde_json::to_string(d)?;
-    xchain_crypto::hash::double_sha256(d)
+    xchain_crypto::hash::hash::double_sha256(d)
 }
-

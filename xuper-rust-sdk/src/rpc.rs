@@ -1,5 +1,4 @@
 /// 负责通信，运行在TEE之外
-use std::env;
 use std::sync::Arc;
 
 use futures::executor;
@@ -8,11 +7,11 @@ use grpc::ClientStub;
 use grpc::ClientStubExt;
 
 use crate::config;
+use crate::errors::{Error, ErrorKind, Result};
 use crate::protos::xchain;
+use crate::protos::xchain_grpc;
 use crate::protos::xendorser;
 use crate::protos::xendorser_grpc;
-
-use crate::errors::{Error, ErrorKind, Result};
 
 //TODO 从新封装数据结构
 #[derive(Default)]
@@ -30,8 +29,8 @@ pub struct Message {
 
 pub struct ChainClient {
     pub chain_name: String,
-    endorser: grpc::client::ClientStub,
-    xchain: grpc::client::ClientStub,
+    endorser: xendorser_grpc::xendorserClient,
+    xchain: xchain_grpc::XchainClient,
 }
 
 impl ChainClient {
@@ -59,7 +58,7 @@ pub struct Session<'a, 'b, 'c> {
     msg: &'c Message,
 }
 
-impl Session<'a, 'b, 'c> {
+impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
     fn new(c: &'a ChainClient, w: &'b super::wallet::Account, m: &'c Message) -> Self {
         Session {
             msg: m,
@@ -71,7 +70,7 @@ impl Session<'a, 'b, 'c> {
     fn call(&self, r: xendorser::EndorserRequest) -> Result<xendorser::EndorserResponse> {
         let resp = self
             .endorser
-            .endorser_call(grpc::RequestOptions::new(), endorser_request)
+            .endorser_call(grpc::RequestOptions::new(), r)
             .join_metadata_result();
         executor::block_on(resp)
     }
@@ -134,7 +133,7 @@ impl Session<'a, 'b, 'c> {
         to: &String,
         amount: &String,
         fee: &str,
-    ) -> Result<(Vec<xchain::TxOutput>)> {
+    ) -> Result<Vec<xchain::TxOutput>> {
         let tx_outputs = std::vec::Vec::<xchain::TxOutput>::new();
         if !to.is_empty() && amount.as_str() != "0" {
             let t = xchain::TxOutput {
@@ -160,16 +159,16 @@ impl Session<'a, 'b, 'c> {
         resp: &mut xchain::PreExecWithSelectUTXOResponse,
     ) -> Result<xchain::Transaction> {
         let total_need = num_bigint::BigInt::from_str(
-            super::config::CONFIG
+            config::CONFIG
                 .compliance_check
                 .compliance_check_endorse_service_fee,
         )?;
-        let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), utxo_total)?;
+        let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), total_need)?;
         let mut tx_outputs = self.generate_tx_output(
-            super::config::CONFIG
+            config::CONFIG
                 .compliance_check
                 .compliance_check_endorse_service_fee_addr,
-            super::config::CONFIG
+            config::CONFIG
                 .compliance_check
                 .compliance_check_endorse_service_fee,
             "0",
@@ -182,7 +181,7 @@ impl Session<'a, 'b, 'c> {
         // compose transaction
         let tx = xchain::Transaction::new();
         tx.set_desc(vec![]);
-        tx.set_version(super::consts::TxVersion);
+        tx.set_version(super::consts::TXVersion);
         tx.set_coinbase(true);
         tx.set_timestamp(super::consts::now_as_nanos());
         tx.set_tx_inputs(tx_inputs);
@@ -235,12 +234,12 @@ impl Session<'a, 'b, 'c> {
 
         let (tx_inputs, delta_tx_ouput) = self.generate_tx_input(utxo_output, total_need)?;
         if !delta_tx_ouput.address.is_empty() {
-            tx_outputs.push(tx_output);
+            tx_outputs.push(delta_tx_ouput);
         }
 
         let tx = xchain::Transaction::new();
         tx.set_desc(vec![]);
-        tx.set_version(super::consts::TxVersion);
+        tx.set_version(super::consts::TXVersion);
         tx.set_coinbase(false);
         tx.set_timestamp(super::consts::now_as_nanos());
         tx.set_tx_inputs(tx_inputs);
