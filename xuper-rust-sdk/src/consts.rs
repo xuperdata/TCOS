@@ -15,15 +15,15 @@ pub fn now_as_secs() -> i64 {
     let since_the_epoch = t
         .duration_since(std::time::UNIX_EPOCH)
         .expect("now as nanos");
-    since_the_epoch as i64
+    since_the_epoch.as_secs() as i64
 }
 
 pub fn str_as_i64(s: &str) -> Result<i64> {
     let i = s
         .parse::<i64>()
-        .map_err(|_| Err(Error::from(ErrorKind::ParseError)))?;
+        .map_err(|_| Error::from(ErrorKind::ParseError))?;
     if i < 0 {
-        return Err(Error::from(ErrorKind::InvalidArgements));
+        return Err(Error::from(ErrorKind::InvalidArguments));
     }
     Ok(i)
 }

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::io::Read;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ComplianceCheckConfig {
@@ -33,7 +34,7 @@ pub struct CommConfig {
 lazy_static! {
     pub static ref CONFIG: std::sync::RwLock<CommConfig> = {
         let path = std::path::PathBuf::from(std::env::var("CONFIG").unwrap());
-        let f = std::fs::File::open(path).expect("file not found");
+        let mut f = std::fs::File::open(path).expect("file not found");
         let mut contents = String::new();
         f.read_to_string(&mut contents).expect("read_to_string");
         let yaml: CommConfig = serde_yaml::from_str(&contents).expect("serde_yaml");

@@ -6,6 +6,7 @@ fn main() {
         .input("src/protos/xchain.proto")
         .includes(&["src/protos"])
         .rust_protobuf(true)
+        .rust_protobuf_customize(protoc_rust::Customize{serde_derive: Some(true),..Default::default()})
         .run()
         .expect("protoc-rust-grpc");
 }

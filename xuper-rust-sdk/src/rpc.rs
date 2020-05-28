@@ -1,10 +1,18 @@
 /// 负责通信，运行在TEE之外
-use std::sync::Arc;
 
+use num_traits::FromPrimitive;
+use num_traits::ToPrimitive;
 use futures::executor;
+use xchain_crypto::sign::ecdsa::KeyPair;
+use serde_json::{self, json};
+
 
 use grpc::ClientStub;
 use grpc::ClientStubExt;
+
+use std::ops::AddAssign;
+use std::ops::Sub;
+use std::str::FromStr;
 
 use crate::config;
 use crate::errors::{Error, ErrorKind, Result};
@@ -36,14 +44,10 @@ pub struct ChainClient {
 impl ChainClient {
     fn new(host: &str, port: u16, port_xchain: u16, bcname: &String) -> Self {
         //TODO: 设置超时，以及body大小
-        let conn = Arc::new(grpc::ClientBuilder::new::new(host, port).build().unwrap());
-        let client_endorser = xendorser_grpc::xendorserClient::with_client(conn);
-        let conn = Arc::new(
-            grpc::ClientBuilder::new::new(host, port_xchain)
-                .build()
-                .unwrap(),
-        );
-        let client_xchain = xendorser_grpc::xendorserClient::with_client(conn);
+        let client_conf = Default::default();
+        let client_endorser = xendorser_grpc::xendorserClient::new_plain(host, port, client_conf).unwrap();
+        let client_conf = Default::default();
+        let client_xchain = xchain_grpc::XchainClient::new_plain(host, port_xchain, client_conf).unwrap();
         ChainClient {
             chain_name: bcname.to_owned(),
             endorser: client_endorser,
@@ -69,30 +73,31 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
 
     fn call(&self, r: xendorser::EndorserRequest) -> Result<xendorser::EndorserResponse> {
         let resp = self
+            .client
             .endorser
             .endorser_call(grpc::RequestOptions::new(), r)
-            .join_metadata_result();
-        executor::block_on(resp)
+            .drop_metadata();
+        Ok(executor::block_on(resp).unwrap())
     }
-    fn check_resp_code(resp: &[xchain::ContractResponse]) -> Result<()> {
+    fn check_resp_code(&self, resp: &[xchain::ContractResponse]) -> Result<()> {
         for i in resp.iter() {
             if i.status > 400 {
-                return Err(Error::from(ErrorKind::ContractCodeGT300));
+                return Err(Error::from(ErrorKind::ContractCodeGT400));
             }
         }
         Ok(())
     }
 
     pub fn pre_exec_with_select_utxo(&self) -> Result<xchain::PreExecWithSelectUTXOResponse> {
-        let request_data = serde_json::to_string(self.msg.pre_sel_utxo_req)?;
-        let endorser_request = xendorser::EndorserRequest::new();
-        endorser_request.set_RequestName("PreExecWithFee");
-        endorser_request.set_BcName(self.client.chain_name);
-        endorser_request.set_RequestData(request_data);
+        let request_data = serde_json::to_string(&self.msg.pre_sel_utxo_req).unwrap();
+        let mut endorser_request = xendorser::EndorserRequest::new();
+        endorser_request.set_RequestName(String::from("PreExecWithFee"));
+        endorser_request.set_BcName(self.client.chain_name.to_owned());
+        endorser_request.set_RequestData(request_data.into_bytes());
         let resp = self.call(endorser_request)?;
 
         let pre_exec_with_select_utxo_resp: xchain::PreExecWithSelectUTXOResponse =
-            serde_json::from_str(resp.ResponseData)?;
+            serde_json::from_slice(&resp.ResponseData)?;
         self.check_resp_code(
             pre_exec_with_select_utxo_resp
                 .get_response()
@@ -107,23 +112,22 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         total_need: &num_bigint::BigInt,
     ) -> Result<(Vec<xchain::TxInput>, xchain::TxOutput)> {
         let mut tx_inputs = std::vec::Vec::<xchain::TxInput>::new();
-        for utxo in utxo_output.utxoList {
-            let ti = xchain::TxInput {
-                ref_txid: utxo.ref_txid,
-                ref_offset: utxo.ref_offset,
-                from_addr: utxo.to_addr,
-                amount: utxo.amount,
-            };
+        for utxo in utxo_output.utxoList.iter() {
+            let mut ti = xchain::TxInput::new();
+            ti.set_ref_txid(utxo.refTxid.clone());
+            ti.set_ref_offset( utxo.refOffset);
+            ti.set_from_addr(utxo.toAddr.clone());
+            ti.set_amount(utxo.amount.clone());
             tx_inputs.push(ti);
         }
 
-        let utxo_total = num_bigint::BigInt::from_str(utxo_output.totalSelected)?;
+        let utxo_total = num_bigint::BigInt::from_str(&utxo_output.totalSelected).unwrap();
 
         let mut to = xchain::TxOutput::new();
-        if utxo_total.cmp(total_need) == num_bigint::BigInt::Order::Greater {
-            let delta = utxo_total.Sub(total_need);
-            to.to_addr = self.msg.address;
-            to.amount = delta.to_bytes_be();
+        if utxo_total.cmp(total_need) == std::cmp::Ordering::Greater {
+            let delta = utxo_total.sub(total_need);
+            to.set_to_addr(self.account.address.clone().into_bytes());
+            to.set_amount(delta.to_bytes_be().1);
         }
         return Ok((tx_inputs, to));
     }
@@ -134,21 +138,17 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         amount: &String,
         fee: &str,
     ) -> Result<Vec<xchain::TxOutput>> {
-        let tx_outputs = std::vec::Vec::<xchain::TxOutput>::new();
+        let mut tx_outputs = std::vec::Vec::<xchain::TxOutput>::new();
         if !to.is_empty() && amount.as_str() != "0" {
-            let t = xchain::TxOutput {
-                address: to,
-                amount: amount,
-                frozen_height: 0,
-            };
+            let mut t = xchain::TxOutput::new();
+            t.set_to_addr(to.clone().into_bytes());
+            t.set_amount(amount.clone().into_bytes());
             tx_outputs.push(t);
         }
         if !fee.is_empty() && fee != "0" {
-            let t = xchain::TxOutput {
-                address: "$",
-                amount: fee,
-                frozen_height: 0,
-            };
+            let mut t = xchain::TxOutput::new();
+            t.set_to_addr(String::from("$").into_bytes());
+            t.set_amount(fee.to_string().into_bytes());
             tx_outputs.push(t);
         }
         Ok(tx_outputs)
@@ -158,43 +158,49 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         &self,
         resp: &mut xchain::PreExecWithSelectUTXOResponse,
     ) -> Result<xchain::Transaction> {
-        let total_need = num_bigint::BigInt::from_str(
-            config::CONFIG
+        let total_need = num_bigint::BigInt::from_i64(
+            config::CONFIG.read().unwrap()
                 .compliance_check
-                .compliance_check_endorse_service_fee,
-        )?;
-        let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), total_need)?;
+                .compliance_check_endorse_service_fee as i64,
+        ).unwrap();
+        let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), &total_need)?;
         let mut tx_outputs = self.generate_tx_output(
-            config::CONFIG
+            &config::CONFIG.read().unwrap()
                 .compliance_check
                 .compliance_check_endorse_service_fee_addr,
-            config::CONFIG
+            &config::CONFIG.read().unwrap()
                 .compliance_check
-                .compliance_check_endorse_service_fee,
+                .compliance_check_endorse_service_fee.to_string(),
             "0",
         )?;
 
-        if !tx_output.address.is_empty() {
+        if !tx_output.to_addr.is_empty() {
             tx_outputs.push(tx_output);
         }
 
         // compose transaction
-        let tx = xchain::Transaction::new();
+        let mut tx = xchain::Transaction::new();
         tx.set_desc(vec![]);
         tx.set_version(super::consts::TXVersion);
         tx.set_coinbase(true);
         tx.set_timestamp(super::consts::now_as_nanos());
-        tx.set_tx_inputs(tx_inputs);
-        tx.set_tx_outputs(tx_outputs);
-        tx.set_initiator(self.msg.initiator);
-        tx.set_nonce(super::wallet::get_nonce()?);
+        tx.set_tx_inputs(protobuf::RepeatedField::from_vec(tx_inputs));
+        tx.set_tx_outputs(protobuf::RepeatedField::from_vec(tx_outputs));
+        tx.set_initiator(self.msg.initiator.to_owned());
+        tx.set_nonce(super::wallet::get_nonce());
 
-        let digest_hash = super::wallet::make_tx_digest_hash(tx)?;
+        let digest_hash = super::wallet::make_tx_digest_hash(&tx)?;
 
-        //TODO sign the digest_hash
-        self.account.sign();
+        //sign the digest_hash
+        let sig = self.account.sign(&digest_hash);
+        let mut signature_info = xchain::SignatureInfo::new();
+        let pk_str = String::from_utf8(self.account.public_key()).unwrap();
+        signature_info.set_PublicKey(pk_str);
+        signature_info.set_Sign(sig);
+        let signature_infos = vec![signature_info; 1];
+        tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));
 
-        tx.set_txid(super::wallet::make_transaction_id(tx)?);
+        tx.set_txid(super::wallet::make_transaction_id(&tx)?);
         Ok(tx)
     }
 
@@ -203,58 +209,72 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         resp: &xchain::PreExecWithSelectUTXOResponse,
         cctx: &xchain::Transaction,
     ) -> Result<xchain::Transaction> {
-        let tx_outputs = self.generate_tx_output(self.msg.to, self.msg.amount, self.msg.fee)?;
+        let mut tx_outputs = self.generate_tx_output(&self.msg.to,
+                                                 &self.msg.amount, &self.msg.fee)?;
 
-        let mut total_selected = num_bigint::BigInt::new(0);
+        let mut total_selected: num_bigint::BigInt = num_traits::Zero::zero();
         let mut utxo_list = std::vec::Vec::<xchain::Utxo>::new();
-        for (index, tx_output) in cctx.tx_outputs.iter() {
-            if tx_output.to_addr == self.msg.initiator {
-                let t = xchain::Utxo {
-                    amount: tx_output.amount,
-                    to_addr: tx_output.to_addr,
-                    ref_txid: cctx.txid,
-                    ref_offset: index,
-                };
+        let mut index = 0;
+        for tx_output in cctx.tx_outputs.iter() {
+            if tx_output.to_addr == self.msg.initiator.as_bytes() {
+                let mut t = xchain::Utxo::new();
+                t.set_amount(tx_output.amount.clone());
+                t.set_toAddr(tx_output.to_addr.clone());
+                t.set_refTxid(cctx.txid.clone());
+                t.set_refOffset(index);
                 utxo_list.push(t);
-                let um = num_bigint::BigInt::from_slice(num_bigint::Sign::Plus, &tx_output.amount)?;
+                let um = num_bigint::BigInt::from_bytes_be(
+                    num_bigint::Sign::Plus,
+                    &tx_output.amount[..]);
                 total_selected.add_assign(um);
+                index += 1;
             };
         }
-        let utxo_output = xchain::UtxoOutput {
-            utxoOutput: utxo_list,
-            total_selected: total_selected.to_string(),
-        };
+        let mut utxo_output = xchain::UtxoOutput::new();
+        utxo_output.set_utxoList(protobuf::RepeatedField::from_vec(utxo_list));
+        utxo_output.set_totalSelected(total_selected.to_string());
 
         let mut total_need =
-            num_bigint::BigInt::from_slice(num_bigint::Sign::Plus, &self.msg.amount)?;
-        total_need.add_assign(num_bigint::BigInt::from_slice(
-            num_bigint::Sign::Plus,
+            num_bigint::BigInt::from_str(&self.msg.amount)
+                .map_err(|_| Error::from(ErrorKind::ParseError))?;
+        total_need.add_assign(num_bigint::BigInt::from_str(
             &self.msg.fee,
-        )?)?;
+        ).unwrap());
 
-        let (tx_inputs, delta_tx_ouput) = self.generate_tx_input(utxo_output, total_need)?;
-        if !delta_tx_ouput.address.is_empty() {
+        let (tx_inputs, delta_tx_ouput) = self.generate_tx_input(&utxo_output, &total_need)?;
+        if !delta_tx_ouput.to_addr.is_empty() {
             tx_outputs.push(delta_tx_ouput);
         }
 
-        let tx = xchain::Transaction::new();
+        let mut tx = xchain::Transaction::new();
         tx.set_desc(vec![]);
         tx.set_version(super::consts::TXVersion);
         tx.set_coinbase(false);
         tx.set_timestamp(super::consts::now_as_nanos());
-        tx.set_tx_inputs(tx_inputs);
-        tx.set_tx_outputs(tx_outputs);
-        tx.set_initiator(self.msg.initiator);
-        tx.set_nonce(super::wallet::get_nonce()?);
+        tx.set_tx_inputs(protobuf::RepeatedField::from_vec(tx_inputs));
+        tx.set_tx_outputs(protobuf::RepeatedField::from_vec(tx_outputs));
+        tx.set_initiator(self.msg.initiator.to_owned());
+        tx.set_nonce(super::wallet::get_nonce());
+        tx.set_auth_require(protobuf::RepeatedField::from_vec(self.msg.auth_require.to_owned()));
 
-        //TODO auth require
+        tx.set_tx_inputs_ext(resp.response.clone().unwrap().inputs.clone());
+        tx.set_tx_outputs_ext(resp.response.clone().unwrap().outputs.clone());
+        tx.set_contract_requests(resp.response.clone().unwrap().requests.clone());
 
-        let digest_hash = super::wallet::make_tx_digest_hash(tx)?;
 
-        //TODO sign the digest_hash
-        self.account.sign();
+        let digest_hash = super::wallet::make_tx_digest_hash(&tx)?;
 
-        tx.set_txid(super::wallet::make_transaction_id(tx)?);
+        //sign the digest_hash
+        let sig = self.account.sign(&digest_hash);
+        let mut signature_info = xchain::SignatureInfo::new();
+
+        let pk_str = String::from_utf8(self.account.public_key()).unwrap();
+        signature_info.set_PublicKey(pk_str);
+        signature_info.set_Sign(sig);
+        let signature_infos = vec![signature_info; 1];
+        tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));
+
+        tx.set_txid(super::wallet::make_transaction_id(&tx)?);
         Ok(tx)
     }
 
@@ -263,33 +283,32 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         tx: &xchain::Transaction,
         fee: &xchain::Transaction,
     ) -> Result<xchain::SignatureInfo> {
-        let tx_status = xchain::TxStatus {
-            bcname: self.client.chain_name.to_owned(),
-            tx: tx,
-        };
-        let request_data = serde_json::to_string(tx_status)?;
-        let endorser_request = xendorser::EndorserRequest::new();
-        endorser_request.set_RequestName("ComplianceCheck");
+        let mut tx_status = xchain::TxStatus::new();
+        tx_status.set_bcname(self.client.chain_name.to_owned());
+        tx_status.set_tx(tx.clone());
+        let request_data = serde_json::to_string(&tx_status)?;
+        let mut endorser_request = xendorser::EndorserRequest::new();
+        endorser_request.set_RequestName(String::from("ComplianceCheck"));
         endorser_request.set_BcName(self.client.chain_name.to_owned());
-        endorser_request.set_RequestData(request_data);
+        endorser_request.set_Fee(fee.clone());
+        endorser_request.set_RequestData(request_data.into_bytes());
         let resp = self.call(endorser_request)?;
-        Ok(resp.get_EndorserSign())
+        Ok(resp.EndorserSign.unwrap())
     }
 
     pub fn post_tx(&self, tx: &xchain::Transaction) -> Result<()> {
-        let tx_status = xchain::TxStatus {
-            bcname: self.client.chain_name.to_owned(),
-            status: xchain::TransactionStatus::UNCONFIRM,
-            tx: tx,
-            txid: tx.txid,
-        };
+        let mut tx_status = xchain::TxStatus::new();
+        tx_status.set_bcname(self.client.chain_name.to_owned());
+        tx_status.set_status(xchain::TransactionStatus::UNCONFIRM);
+        tx_status.set_tx(tx.clone());
+        tx_status.set_txid(tx.txid.clone());
         let resp = self
             .client
             .xchain
             .query_tx(grpc::RequestOptions::new(), tx_status)
-            .join_metadata_result();
-        executor::block_on(resp);
-        if resp.Header.Error != xchain::XChainErrorEnum::SUCCESS {
+            .drop_metadata();
+        let resp = executor::block_on(resp).unwrap();
+        if resp.header.unwrap().error!= xchain::XChainErrorEnum::SUCCESS {
             println!("post tx failed");
             return Err(Error::from(ErrorKind::ParseError));
         }
@@ -298,33 +317,33 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
 
     pub fn gen_complete_tx_and_post(
         &self,
-        pre_exec_resp: &xchain::PreExecWithSelectUTXOResponse,
+        pre_exec_resp: &mut xchain::PreExecWithSelectUTXOResponse,
     ) -> Result<String> {
-        let cctx = self.gen_compliance_check_tx(pre_exec_resp)?;
-        let mut tx = self.gen_real_tx(pre_exec_resp, cctx)?;
-        let end_sign = self.compliance_check(tx, cctx);
+        let mut ttt = pre_exec_resp.clone();
+        let cctx = self.gen_compliance_check_tx(&mut ttt)?;
+        let mut tx = self.gen_real_tx(&ttt, &cctx)?;
+        let end_sign = self.compliance_check(&tx, &cctx)?;
 
         tx.auth_require_signs.push(end_sign);
-        tx.set_txid(super::wallet::make_transaction_id(tx));
-        self.post_tx(tx)?;
+        tx.set_txid(super::wallet::make_transaction_id(&tx)?);
+        self.post_tx(&tx)?;
         Ok(hex::encode(tx.txid))
     }
     pub fn query_tx(&self, txid: &String) -> Result<xchain::TxStatus> {
-        let tx_status = xchain::TxStatus {
-            bcname: self.client.chain_name.to_owned(),
-            txid: hex::decode(txid),
-        };
+        let mut tx_status = xchain::TxStatus::new();
+        tx_status.set_bcname(self.client.chain_name.to_owned());
+        tx_status.set_txid(hex::decode(txid).unwrap());
         let resp = self
             .client
             .xchain
-            .query_tx(grpc::RequestOptions::new(), tx_status)
-            .join_metadata_result();
-        executor::block_on(resp);
+            .query_tx(grpc::RequestOptions::new(), tx_status).drop_metadata();
+        let resp = executor::block_on(resp).unwrap();
 
-        if resp.Header.Error != xchain::XChainErrorEnum::SUCCESS {
+        /* TODO
+        if resp.header.unwrap().error != xchain::XChainErrorEnum::SUCCESS {
             println!("query tx failed");
             return Err(Error::from(ErrorKind::ChainRPCError));
-        }
+        }*/
         // TODO check txid if null
         Ok(resp)
     }
@@ -333,9 +352,9 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         let resp = self
             .client
             .xchain
-            .pre_exec(grpc::RequestOptions::new(), self.msg.invoke_rpc_req)
-            .join_metadata_result();
-        executor::block_on(resp);
+            .pre_exec(grpc::RequestOptions::new(), self.msg.invoke_rpc_req.clone())
+            .drop_metadata();
+        let resp = executor::block_on(resp).unwrap();
         self.check_resp_code(resp.get_response().get_responses())?;
         Ok(resp)
     }

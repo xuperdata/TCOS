@@ -7,17 +7,18 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-xchain_crypto    = { git = "https://github.com/duanbing/xchain-rust-crypto", version = "0.1.0", package = "xchain-rust-crypto" }
+xchain_crypto    = { git = "https://github.com/duanbing/xchain-rust-crypto", tag = "v0.2.0", package = "xchain-rust-crypto" }
 serde            = {  version = "1.0.104", features = ["derive"]}
 serde_derive     = "1.0.104"
 serde_json       = "1.0.40"
 num-bigint       = { version = "0.2.3", features = ["serde"] }
+num-traits       = "0.2.10"
 serde_yaml       = "0.8"
 hex              = "0.4.0"
 lazy_static      = "1.1.1"
 base58           = "0.1.0"
 grpc             = "0.8.0"
-protobuf         = "2.14.0"
+protobuf         = { version = "2.14.0", features = ["with-serde"] }
 futures          = "~0.3"
 rand             = "0.7.3"
 rand_core        = "0.5.1"
@@ -28,3 +29,6 @@ grpc-protobuf    = "0.8.0"
 protoc-rust      = "2.14.0"
 protoc-rust-grpc = "0.8.0"
 
+[features]
+default = ["with-serde"]
+with-serde = []

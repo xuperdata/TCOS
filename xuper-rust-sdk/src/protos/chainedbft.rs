@@ -27,6 +27,7 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_14_0;
 
 #[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct QuorumCert {
     // message fields
     pub ProposalId: ::std::vec::Vec<u8>,
@@ -35,7 +36,9 @@ pub struct QuorumCert {
     pub ViewNumber: i64,
     pub SignInfos: ::protobuf::SingularPtrField<QCSignInfos>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -355,11 +358,14 @@ impl ::protobuf::reflect::ProtobufValue for QuorumCert {
 }
 
 #[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct QCSignInfos {
     // message fields
     pub QCSignInfos: ::protobuf::RepeatedField<SignInfo>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -525,13 +531,16 @@ impl ::protobuf::reflect::ProtobufValue for QCSignInfos {
 }
 
 #[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct SignInfo {
     // message fields
     pub Address: ::std::string::String,
     pub PublicKey: ::std::string::String,
     pub Sign: ::std::vec::Vec<u8>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -772,6 +781,7 @@ impl ::protobuf::reflect::ProtobufValue for SignInfo {
 }
 
 #[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ChainedBftPhaseMessage {
     // message fields
     pub Type: QCState,
@@ -781,7 +791,9 @@ pub struct ChainedBftPhaseMessage {
     pub MsgDigest: ::std::vec::Vec<u8>,
     pub Signature: ::protobuf::SingularPtrField<SignInfo>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -1172,12 +1184,15 @@ impl ::protobuf::reflect::ProtobufValue for ChainedBftPhaseMessage {
 }
 
 #[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ChainedBftVoteMessage {
     // message fields
     pub ProposalId: ::std::vec::Vec<u8>,
     pub Signature: ::protobuf::SingularPtrField<SignInfo>,
     // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
     pub cached_size: ::protobuf::CachedSize,
 }
 
@@ -1392,6 +1407,7 @@ impl ::protobuf::reflect::ProtobufValue for ChainedBftVoteMessage {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub enum QCState {
     NEW_VIEW = 0,
     PREPARE = 1,
