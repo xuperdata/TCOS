@@ -1,3 +1,3 @@
 ## xuper-rust-sdk
 
-A Uuperchain SDK for trusted application.
+A Xuperchain SDK for trusted application.
