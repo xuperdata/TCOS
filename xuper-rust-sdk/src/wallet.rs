@@ -46,11 +46,9 @@ impl Account {
         Ok(())
     }
 
-    pub fn public_key(&self) -> Vec<u8> {
+    pub fn public_key(&self) -> String {
         let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path).unwrap();
-        let alg = &xchain_crypto::sign::ecdsa::ECDSA_P256_SHA256_ASN1;
-        let pk = xchain_crypto::account::PublicKey::new(alg, p.public_key());
-        pk.as_ref().to_vec()
+        xchain_crypto::account::json_key::get_ecdsa_public_key_json_format(&p).unwrap()
     }
 
     // TODO  把其他所有crypto相关的操作移动到这里
@@ -66,7 +64,7 @@ pub fn get_nonce() -> String {
     )
     .unwrap();
     let mut same_seed = [0u8; 32];
-    same_seed.copy_from_slice(&seed);
+    same_seed.copy_from_slice(&seed[..32]);
     let mut rng = StdRng::from_seed(same_seed);
     let r = rng.next_u32() % m;
 
@@ -293,12 +291,14 @@ impl From<&xchain::Transaction> for TransactionDef {
 pub fn make_tx_digest_hash(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let d = TransactionDef::from(tx);
     let d = serde_json::to_string(&d)?;
+    println!("make_transaction_id: {:?}", d);
     Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
 }
 
 pub fn make_transaction_id(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let d = TransactionDefWithSigns::from(tx);
     let d = serde_json::to_string(&d)?;
+    println!("make_transaction_id: {:?}", d);
     Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
 }
 

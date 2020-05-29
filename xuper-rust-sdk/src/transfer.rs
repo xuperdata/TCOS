@@ -34,6 +34,7 @@ pub fn transfer(
         .unwrap()
         .compliance_check
         .compliance_check_endorse_service_fee as i64;
+    // TODO 应该不用判断
     if endorser_fee > amount {
         println!("endorser_fee should smaller than amount");
         return Err(Error::from(ErrorKind::InvalidArguments));

@@ -88,7 +88,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
     }
 
     pub fn pre_exec_with_select_utxo(&self) -> Result<xchain::PreExecWithSelectUTXOResponse> {
-        let request_data = serde_json::to_string(&self.msg.pre_sel_utxo_req).unwrap();
+        let request_data = serde_json::to_string(&self.msg.pre_sel_utxo_req)?;
         let mut endorser_request = xendorser::EndorserRequest::new();
         endorser_request.set_RequestName(String::from("PreExecWithFee"));
         endorser_request.set_BcName(self.client.chain_name.to_owned());
@@ -164,7 +164,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
                 .compliance_check
                 .compliance_check_endorse_service_fee as i64,
         )
-        .unwrap();
+        .ok_or(Error::from(ErrorKind::ParseError))?;
         let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), &total_need)?;
         let mut tx_outputs = self.generate_tx_output(
             &config::CONFIG
@@ -201,8 +201,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         //sign the digest_hash
         let sig = self.account.sign(&digest_hash)?;
         let mut signature_info = xchain::SignatureInfo::new();
-        let pk_str = String::from_utf8(self.account.public_key()).unwrap();
-        signature_info.set_PublicKey(pk_str);
+        signature_info.set_PublicKey(self.account.public_key());
         signature_info.set_Sign(sig);
         let signature_infos = vec![signature_info; 1];
         tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));
@@ -274,8 +273,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         let sig = self.account.sign(&digest_hash)?;
         let mut signature_info = xchain::SignatureInfo::new();
 
-        let pk_str = String::from_utf8(self.account.public_key()).unwrap();
-        signature_info.set_PublicKey(pk_str);
+        signature_info.set_PublicKey(self.account.public_key());
         signature_info.set_Sign(sig);
         let signature_infos = vec![signature_info; 1];
         tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));

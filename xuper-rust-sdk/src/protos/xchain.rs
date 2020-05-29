@@ -18,7 +18,7 @@
 #![allow(unused_imports)]
 #![allow(unused_results)]
 //! Generated file from `xchain.proto`
-
+use serde_repr::*;
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 
@@ -31,7 +31,9 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 pub struct Header {
     // message fields
     pub logid: ::std::string::String,
+    #[serde(default)]
     pub from_node: ::std::string::String,
+    #[serde(default)]
     pub error: XChainErrorEnum,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -2116,7 +2118,8 @@ impl ::protobuf::reflect::ProtobufValue for Block {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "with-serde", derive(Serialize_repr, Deserialize_repr))]
+#[repr(u8)]
 pub enum Block_EBlockStatus {
     ERROR = 0,
     TRUNK = 1,
@@ -10282,14 +10285,32 @@ impl ::protobuf::reflect::ProtobufValue for RawUrl {
     }
 }
 
+use serde::{de, de::Deserializer, ser::Serializer, Deserialize, Serialize};
+
+fn bytes_deserialize<'de, D>(deserializer: D) -> std::result::Result<Vec<u8>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use std::str::FromStr;
+    let s = String::deserialize(deserializer)?;
+    let b = s.into_bytes();
+    Ok(b)
+}
+
 #[derive(PartialEq,Clone,Default)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct Utxo {
     // message fields
+    #[serde(deserialize_with = "bytes_deserialize")]
     pub amount: ::std::vec::Vec<u8>,
+    #[serde(deserialize_with = "bytes_deserialize")]
     pub toAddr: ::std::vec::Vec<u8>,
+    #[serde(default)]
+    #[serde(deserialize_with = "bytes_deserialize")]
     pub toPubkey: ::std::vec::Vec<u8>,
+    #[serde(deserialize_with = "bytes_deserialize")]
     pub refTxid: ::std::vec::Vec<u8>,
+    #[serde(default)]
     pub refOffset: i32,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -18606,13 +18627,21 @@ impl ::protobuf::reflect::ProtobufValue for InvokeRequest {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct InvokeResponse {
     // message fields
+    #[serde(default)]
     pub inputs: ::protobuf::RepeatedField<TxInputExt>,
+    #[serde(default)]
     pub outputs: ::protobuf::RepeatedField<TxOutputExt>,
+    #[serde(default)]
     pub response: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
+    #[serde(default)]
     pub gas_used: i64,
+    #[serde(default)]
     pub requests: ::protobuf::RepeatedField<InvokeRequest>,
+    #[serde(default)]
     pub responses: ::protobuf::RepeatedField<ContractResponse>,
+    #[serde(default)]
     pub utxoInputs: ::protobuf::RepeatedField<TxInput>,
+    #[serde(default)]
     pub utxoOutputs: ::protobuf::RepeatedField<TxOutput>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -26352,7 +26381,8 @@ impl ::protobuf::reflect::ProtobufValue for ContractStatData {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "with-serde", derive(Serialize_repr, Deserialize_repr))]
+#[repr(u8)]
 pub enum XChainErrorEnum {
     SUCCESS = 0,
     UNKNOW_ERROR = 1,
@@ -26495,7 +26525,8 @@ impl ::protobuf::reflect::ProtobufValue for XChainErrorEnum {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "with-serde", derive(Serialize_repr, Deserialize_repr))]
+#[repr(u8)]
 pub enum TransactionStatus {
     UNDEFINE = 0,
     NOEXIST = 1,
@@ -26560,7 +26591,8 @@ impl ::protobuf::reflect::ProtobufValue for TransactionStatus {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "with-serde", derive(Serialize_repr, Deserialize_repr))]
+#[repr(u8)]
 pub enum PermissionRule {
     NULL = 0,
     SIGN_THRESHOLD = 1,
@@ -26628,7 +26660,8 @@ impl ::protobuf::reflect::ProtobufValue for PermissionRule {
 }
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "with-serde", derive(Serialize_repr, Deserialize_repr))]
+#[repr(u8)]
 pub enum ResourceType {
     CPU = 0,
     MEMORY = 1,
