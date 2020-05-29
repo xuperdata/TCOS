@@ -1,5 +1,6 @@
 use crate::errors::{Error, ErrorKind, Result};
 
+#[allow(non_upper_case_globals)]
 pub const TXVersion: i32 = 1;
 
 pub fn now_as_nanos() -> i64 {
