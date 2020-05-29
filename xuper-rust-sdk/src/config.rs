@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
-use std::io::Read;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+//TODO: handle skip
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct ComplianceCheckConfig {
-    #[serde(rename = "isNeedComplianceCheck")]
+    #[serde(rename = "isNeedComplianceCheck", skip)]
     pub is_need_compliance_check: bool,
-    #[serde(rename = "isNeedComplianceCheckFee")]
+    #[serde(rename = "isNeedComplianceCheckFee", skip)]
     pub is_need_compliance_fee: bool,
     #[serde(rename = "complianceCheckEndorseServiceFee")]
     pub compliance_check_endorse_service_fee: i32,
@@ -15,7 +15,7 @@ pub struct ComplianceCheckConfig {
     pub compliance_check_endorse_service_addr: String,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct CommConfig {
     #[serde(rename = "node")]
     pub node: String,
@@ -25,7 +25,7 @@ pub struct CommConfig {
     pub endorse_port: u16,
     #[serde(rename = "complianceCheck")]
     pub compliance_check: ComplianceCheckConfig,
-    #[serde(rename = "minNewChainAmount")]
+    #[serde(rename = "minNewChainAmount", skip)]
     pub min_new_chain_amount: String,
     #[serde(rename = "crypto")]
     pub crypto: String,

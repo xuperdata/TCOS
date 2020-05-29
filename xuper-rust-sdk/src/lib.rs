@@ -13,7 +13,8 @@ pub mod errors;
 pub mod protos;
 
 mod config;
-mod consts;
-mod rpc;
-mod wallet;
-
+pub mod consts;
+pub mod contract;
+pub mod rpc;
+pub mod transfer;
+pub mod wallet;

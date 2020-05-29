@@ -1,15 +1,15 @@
 use crate::errors::*;
 use crate::protos::xchain;
+use rand::rngs::StdRng;
+use rand_core::{RngCore, SeedableRng};
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
 /// 唯一可以调用xchain_crypto的地方
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use rand_core::{RngCore, SeedableRng};
-use rand::rngs::StdRng;
+use serde::{Deserialize, Serialize};
 use xchain_crypto::sign::ecdsa::KeyPair;
 
 /// 加载钱包地址或者加载enclave
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Account {
     pub contract_name: String,
     pub contract_account: String,
@@ -24,7 +24,7 @@ impl Account {
         let alg = &xchain_crypto::sign::ecdsa::ECDSA_P256_SHA256_ASN1;
         let pk = xchain_crypto::account::PublicKey::new(alg, p.public_key());
         let address = xchain_crypto::account::address::get_address_from_public_key(&pk).unwrap();
-        Account{
+        Account {
             address: address,
             path: path.to_string(),
             contract_account: contract_account.to_string(),
@@ -32,17 +32,18 @@ impl Account {
         }
     }
 
-    pub fn sign(&self, msg: &[u8]) -> Vec<u8> {
-        let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path).unwrap();
+    pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
+        let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path)?;
         //let alg = &xchain_crypto::sign::ecdsa::ECDSA_P256_SHA256_ASN1;
-        p.sign(msg).unwrap().as_ref().to_vec()
+        Ok(p.sign(msg)?.as_ref().to_vec())
     }
 
-    pub fn verify(&self, msg: &[u8], sig: &[u8])-> bool {
-        let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path).unwrap();
+    pub fn verify(&self, msg: &[u8], sig: &[u8]) -> Result<()> {
+        let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path)?;
         let alg = &xchain_crypto::sign::ecdsa::ECDSA_P256_SHA256_ASN1;
         let pk = xchain_crypto::account::PublicKey::new(alg, p.public_key());
-        pk.verify(msg, sig).is_ok()
+        pk.verify(msg, sig)?;
+        Ok(())
     }
 
     pub fn public_key(&self) -> Vec<u8> {
@@ -62,7 +63,8 @@ pub fn get_nonce() -> String {
     let seed = xchain_crypto::hdwallet::rand::generate_seed_with_strength_and_keylen(
         xchain_crypto::hdwallet::rand::KeyStrength::HARD,
         64,
-    ).unwrap();
+    )
+    .unwrap();
     let mut same_seed = [0u8; 32];
     same_seed.copy_from_slice(&seed);
     let mut rng = StdRng::from_seed(same_seed);
@@ -72,8 +74,7 @@ pub fn get_nonce() -> String {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq,Clone,Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TxInputDef {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub ref_txid: ::std::vec::Vec<u8>,
@@ -88,7 +89,7 @@ pub struct TxInputDef {
 
 impl From<&xchain::TxInput> for TxInputDef {
     fn from(ti: &xchain::TxInput) -> Self {
-        TxInputDef{
+        TxInputDef {
             ref_txid: ti.ref_txid.clone(),
             ref_offset: ti.ref_offset,
             from_addr: ti.from_addr.clone(),
@@ -99,8 +100,7 @@ impl From<&xchain::TxInput> for TxInputDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq,Clone,Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TxInputExtDef {
     // message fields
     pub bucket: ::std::string::String,
@@ -123,8 +123,7 @@ impl From<&xchain::TxInputExt> for TxInputExtDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq,Clone,Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TxOutputExtDef {
     // message fields
     pub bucket: ::std::string::String,
@@ -145,8 +144,7 @@ impl From<&xchain::TxOutputExt> for TxOutputExtDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq,Clone,Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TransactionDef {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_inputs: Vec<TxInputDef>,
@@ -162,7 +160,6 @@ pub struct TransactionDef {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_outputs_ext: Vec<TxOutputExtDef>,
 
-
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub contract_requests: Vec<xchain::InvokeRequest>,
     pub initiator: ::std::string::String,
@@ -177,8 +174,7 @@ pub struct TransactionDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq,Clone,Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TransactionDefWithSigns {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_inputs: Vec<TxInputDef>,
@@ -193,7 +189,6 @@ pub struct TransactionDefWithSigns {
     pub tx_inputs_ext: Vec<TxInputExtDef>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_outputs_ext: Vec<TxOutputExtDef>,
-
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub contract_requests: Vec<xchain::InvokeRequest>,
@@ -214,17 +209,35 @@ pub struct TransactionDefWithSigns {
     pub HD_info: Option<xchain::HDInfo>,
 }
 
-impl From <&xchain::Transaction> for TransactionDefWithSigns {
+impl From<&xchain::Transaction> for TransactionDefWithSigns {
     fn from(tx: &xchain::Transaction) -> Self {
         TransactionDefWithSigns {
-            tx_inputs : tx.tx_inputs.clone().into_vec().iter().map(|x| TxInputDef::from(x)).collect(),
+            tx_inputs: tx
+                .tx_inputs
+                .clone()
+                .into_vec()
+                .iter()
+                .map(|x| TxInputDef::from(x))
+                .collect(),
             tx_outputs: tx.tx_outputs.clone().into_vec(),
             desc: tx.desc.clone(),
             nonce: tx.nonce.to_owned(),
             timestamp: tx.timestamp,
             version: tx.version,
-            tx_inputs_ext: tx.tx_inputs_ext.clone().into_vec().iter().map(|x| TxInputExtDef::from(x)).collect(),
-            tx_outputs_ext: tx.tx_outputs_ext.clone().into_vec().iter().map(|x| TxOutputExtDef::from(x)).collect(),
+            tx_inputs_ext: tx
+                .tx_inputs_ext
+                .clone()
+                .into_vec()
+                .iter()
+                .map(|x| TxInputExtDef::from(x))
+                .collect(),
+            tx_outputs_ext: tx
+                .tx_outputs_ext
+                .clone()
+                .into_vec()
+                .iter()
+                .map(|x| TxOutputExtDef::from(x))
+                .collect(),
             contract_requests: tx.contract_requests.clone().into_vec(),
             initiator: tx.initiator.to_owned(),
             auth_require: tx.auth_require.clone().into_vec(),
@@ -238,17 +251,35 @@ impl From <&xchain::Transaction> for TransactionDefWithSigns {
     }
 }
 
-impl From <&xchain::Transaction> for TransactionDef{
+impl From<&xchain::Transaction> for TransactionDef {
     fn from(tx: &xchain::Transaction) -> Self {
-        TransactionDef{
-            tx_inputs :  tx.tx_inputs.clone().into_vec().iter().map(|x| TxInputDef::from(x)).collect(),
+        TransactionDef {
+            tx_inputs: tx
+                .tx_inputs
+                .clone()
+                .into_vec()
+                .iter()
+                .map(|x| TxInputDef::from(x))
+                .collect(),
             tx_outputs: tx.tx_outputs.clone().into_vec(),
             desc: tx.desc.clone(),
             nonce: tx.nonce.to_owned(),
             timestamp: tx.timestamp,
             version: tx.version,
-            tx_inputs_ext: tx.tx_inputs_ext.clone().into_vec().iter().map(|x| TxInputExtDef::from(x)).collect(),
-            tx_outputs_ext: tx.tx_outputs_ext.clone().into_vec().iter().map(|x| TxOutputExtDef::from(x)).collect(),
+            tx_inputs_ext: tx
+                .tx_inputs_ext
+                .clone()
+                .into_vec()
+                .iter()
+                .map(|x| TxInputExtDef::from(x))
+                .collect(),
+            tx_outputs_ext: tx
+                .tx_outputs_ext
+                .clone()
+                .into_vec()
+                .iter()
+                .map(|x| TxOutputExtDef::from(x))
+                .collect(),
             contract_requests: tx.contract_requests.clone().into_vec(),
             initiator: tx.initiator.to_owned(),
             auth_require: tx.auth_require.clone().into_vec(),
@@ -269,4 +300,20 @@ pub fn make_transaction_id(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let d = TransactionDefWithSigns::from(tx);
     let d = serde_json::to_string(&d)?;
     Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_load_account() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("key/private.key");
+        let acc = Account::new(d.to_str().unwrap(), "counter", "XC1111111111000000@xuper");
+        println!("{:?}", acc);
+        let address = include_str!("../key/address");
+        assert_eq!(acc.address, address);
+    }
 }
