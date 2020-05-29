@@ -903,7 +903,7 @@ dependencies = [
 [[package]]
 name = "xchain-rust-crypto"
 version = "0.1.0"
-source = "git+https://github.com/duanbing/xchain-rust-crypto?tag=v0.2.0#68a6903d6b85c54e823d8f3f79ff83264c015bc5"
+source = "git+https://github.com/duanbing/xchain-rust-crypto?tag=v0.3.0#dcb5d1d24efc8dc6ef41f187b15a73e3370cf952"
 dependencies = [
  "base58 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -943,7 +943,7 @@ dependencies = [
  "serde_derive 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.53 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_yaml 0.8.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "xchain-rust-crypto 0.1.0 (git+https://github.com/duanbing/xchain-rust-crypto?tag=v0.2.0)",
+ "xchain-rust-crypto 0.1.0 (git+https://github.com/duanbing/xchain-rust-crypto?tag=v0.3.0)",
 ]
 
 [[package]]
@@ -1065,5 +1065,5 @@ dependencies = [
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum ws2_32-sys 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"
-"checksum xchain-rust-crypto 0.1.0 (git+https://github.com/duanbing/xchain-rust-crypto?tag=v0.2.0)" = "<none>"
+"checksum xchain-rust-crypto 0.1.0 (git+https://github.com/duanbing/xchain-rust-crypto?tag=v0.3.0)" = "<none>"
 "checksum yaml-rust 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "65923dd1784f44da1d2c3dbbc5e822045628c590ba72123e1c73d3c230c4434d"

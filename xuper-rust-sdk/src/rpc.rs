@@ -17,7 +17,6 @@ use crate::protos::xchain_grpc;
 use crate::protos::xendorser;
 use crate::protos::xendorser_grpc;
 
-//TODO 从新封装数据结构
 #[derive(Default)]
 pub struct Message {
     pub to: String,

@@ -33,10 +33,7 @@ pub struct CommConfig {
 
 lazy_static! {
     pub static ref CONFIG: std::sync::RwLock<CommConfig> = {
-        let path = std::path::PathBuf::from(std::env::var("CONFIG").unwrap());
-        let mut f = std::fs::File::open(path).expect("file not found");
-        let mut contents = String::new();
-        f.read_to_string(&mut contents).expect("read_to_string");
+        let contents = include_str!("../conf/sdk.yaml");
         let yaml: CommConfig = serde_yaml::from_str(&contents).expect("serde_yaml");
         std::sync::RwLock::new(yaml)
     };
