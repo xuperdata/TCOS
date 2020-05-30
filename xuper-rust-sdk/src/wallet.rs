@@ -96,6 +96,27 @@ where
     Ok(())
 }
 
+fn encode_empty_array<S, T>(arr: &Vec<T>, buf: &mut String) -> std::result::Result<(), S::Error>
+where
+    S: serde::ser::Serializer,
+    T: serde::ser::Serialize,
+{
+    use serde::ser::Error;
+    if arr.len() > 0 {
+        let s = serde_json::to_string(arr).map_err(Error::custom)?;
+        buf.push_str(&s);
+        buf.push('\n');
+        return Ok(());
+    }
+    // push null
+    buf.push('n');
+    buf.push('u');
+    buf.push('l');
+    buf.push('l');
+    buf.push('\n');
+    Ok(())
+}
+
 impl Serialize for TxInputDef {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -253,9 +274,7 @@ impl Serialize for TransactionDef {
             j.push_str(&s);
         }
 
-        let s = serde_json::to_string(&self.tx_outputs).map_err(Error::custom)?;
-        j.push_str(&s);
-        j.push('\n');
+        encode_empty_array::<S, xchain::TxOutput>(&self.tx_outputs, &mut j)?;
 
         encode_bytes::<S>(&self.desc, &mut j)?;
 
@@ -281,26 +300,17 @@ impl Serialize for TransactionDef {
             j.push_str(&s);
         }
 
-        let s = serde_json::to_string(&self.contract_requests).map_err(Error::custom)?;
-        j.push_str(&s);
-        j.push('\n');
+        encode_empty_array::<S, xchain::InvokeRequest>(&self.contract_requests, &mut j)?;
 
         let s = serde_json::to_string(&self.initiator).map_err(Error::custom)?;
         j.push_str(&s);
         j.push('\n');
 
-        let s = serde_json::to_string(&self.auth_require).map_err(Error::custom)?;
-        j.push_str(&s);
-        j.push('\n');
+        encode_empty_array::<S, String>(&self.auth_require, &mut j)?;
 
         if self.include_signes {
-            let s = serde_json::to_string(&self.initiator_signs).map_err(Error::custom)?;
-            j.push_str(&s);
-            j.push('\n');
-
-            let s = serde_json::to_string(&self.auth_require_signs).map_err(Error::custom)?;
-            j.push_str(&s);
-            j.push('\n');
+            encode_empty_array::<S, xchain::SignatureInfo>(&self.initiator_signs, &mut j)?;
+            encode_empty_array::<S, xchain::SignatureInfo>(&self.auth_require_signs, &mut j)?;
 
             if self.xuper_sign.is_some() {
                 //TODO BUG
