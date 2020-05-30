@@ -1,4 +1,3 @@
-extern crate base58;
 use serde_derive;
 use std::fmt;
 

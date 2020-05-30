@@ -5,7 +5,8 @@ use rand_core::{RngCore, SeedableRng};
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
 /// 唯一可以调用xchain_crypto的地方
-use serde::{Deserialize, Serialize};
+//use serde::{Deserialize, Serialize};
+use serde::ser::Serialize;
 use xchain_crypto::sign::ecdsa::KeyPair;
 
 /// 加载钱包地址或者加载enclave
@@ -72,17 +73,51 @@ pub fn get_nonce() -> String {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TxInputDef {
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub ref_txid: ::std::vec::Vec<u8>,
     pub ref_offset: i32,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub from_addr: ::std::vec::Vec<u8>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub amount: ::std::vec::Vec<u8>,
-    #[serde(skip_serializing)]
     pub frozen_height: i64,
+}
+
+fn encode_bytes<S>(v: &Vec<u8>, buf: &mut String) -> std::result::Result<(), S::Error>
+where
+    S: serde::ser::Serializer,
+{
+    use serde::ser::Error;
+    if v.len() == 0 {
+        return Ok(());
+    }
+    let b64 = base64::encode(v);
+    let ti = serde_json::to_string(&b64).map_err(Error::custom)?;
+    buf.push_str(&ti);
+    buf.push('\n');
+    Ok(())
+}
+
+impl Serialize for TxInputDef {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        use serde::ser::Error;
+        let mut j = String::new();
+        encode_bytes::<S>(&self.ref_txid, &mut j)?;
+
+        let ti = serde_json::to_string(&self.ref_offset).map_err(Error::custom)?;
+        j.push_str(&ti);
+        j.push('\n');
+
+        encode_bytes::<S>(&self.from_addr, &mut j)?;
+        encode_bytes::<S>(&self.amount, &mut j)?;
+
+        let ti = serde_json::to_string(&self.frozen_height).map_err(Error::custom)?;
+        j.push_str(&ti);
+        j.push('\n');
+
+        j.serialize(serializer)
+    }
 }
 
 impl From<&xchain::TxInput> for TxInputDef {
@@ -98,15 +133,35 @@ impl From<&xchain::TxInput> for TxInputDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TxInputExtDef {
     // message fields
     pub bucket: ::std::string::String,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub key: ::std::vec::Vec<u8>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub ref_txid: ::std::vec::Vec<u8>,
     pub ref_offset: i32,
+}
+
+impl Serialize for TxInputExtDef {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        use serde::ser::Error;
+        let mut j = String::new();
+
+        let ti = serde_json::to_string(&self.bucket).map_err(Error::custom)?;
+        j.push_str(&ti);
+        j.push('\n');
+
+        encode_bytes::<S>(&self.key, &mut j)?;
+        encode_bytes::<S>(&self.ref_txid, &mut j)?;
+
+        let ti = serde_json::to_string(&self.ref_offset).map_err(Error::custom)?;
+        j.push_str(&ti);
+        j.push('\n');
+
+        j.serialize(serializer)
+    }
 }
 
 impl From<&xchain::TxInputExt> for TxInputExtDef {
@@ -121,14 +176,30 @@ impl From<&xchain::TxInputExt> for TxInputExtDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TxOutputExtDef {
     // message fields
     pub bucket: ::std::string::String,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub key: ::std::vec::Vec<u8>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub value: ::std::vec::Vec<u8>,
+}
+
+impl Serialize for TxOutputExtDef {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        use serde::ser::Error;
+        let mut j = String::new();
+
+        let ti = serde_json::to_string(&self.bucket).map_err(Error::custom)?;
+        j.push_str(&ti);
+        j.push('\n');
+
+        encode_bytes::<S>(&self.key, &mut j)?;
+        encode_bytes::<S>(&self.value, &mut j)?;
+
+        j.serialize(serializer)
+    }
 }
 
 impl From<&xchain::TxOutputExt> for TxOutputExtDef {
@@ -142,53 +213,17 @@ impl From<&xchain::TxOutputExt> for TxOutputExtDef {
 }
 
 #[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct TransactionDef {
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_inputs: Vec<TxInputDef>,
     pub tx_outputs: Vec<xchain::TxOutput>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub desc: ::std::vec::Vec<u8>,
     pub nonce: ::std::string::String,
     pub timestamp: i64,
     pub version: i32,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_inputs_ext: Vec<TxInputExtDef>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tx_outputs_ext: Vec<TxOutputExtDef>,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub contract_requests: Vec<xchain::InvokeRequest>,
-    pub initiator: ::std::string::String,
-    pub auth_require: Vec<std::string::String>,
-
-    pub coinbase: bool,
-    pub autogen: bool,
-
-    //TODO 先不处理hd info
-    #[serde(skip_serializing)]
-    pub HD_info: Option<xchain::HDInfo>,
-}
-
-#[allow(non_snake_case)]
-#[derive(PartialEq, Clone, Default, Serialize, Deserialize)]
-pub struct TransactionDefWithSigns {
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub tx_inputs: Vec<TxInputDef>,
-    pub tx_outputs: Vec<xchain::TxOutput>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub desc: ::std::vec::Vec<u8>,
-    pub nonce: ::std::string::String,
-    pub timestamp: i64,
-    pub version: i32,
-
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub tx_inputs_ext: Vec<TxInputExtDef>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub tx_outputs_ext: Vec<TxOutputExtDef>,
-
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub contract_requests: Vec<xchain::InvokeRequest>,
     pub initiator: ::std::string::String,
     pub auth_require: Vec<::std::string::String>,
@@ -196,20 +231,107 @@ pub struct TransactionDefWithSigns {
     //the only difference part
     pub initiator_signs: Vec<xchain::SignatureInfo>,
     pub auth_require_signs: Vec<xchain::SignatureInfo>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub xuper_sign: Option<xchain::XuperSignature>,
 
     pub coinbase: bool,
     pub autogen: bool,
 
     //TODO 先不处理hd info
-    #[serde(skip_serializing)]
     pub HD_info: Option<xchain::HDInfo>,
+    pub include_signes: bool,
 }
 
-impl From<&xchain::Transaction> for TransactionDefWithSigns {
+impl Serialize for TransactionDef {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        use serde::ser::Error;
+        let mut j = String::new();
+        for ti in &self.tx_inputs {
+            let s = serde_json::to_string(&ti).map_err(Error::custom)?;
+            j.push_str(&s);
+        }
+
+        let s = serde_json::to_string(&self.tx_outputs).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        encode_bytes::<S>(&self.desc, &mut j)?;
+
+        let s = serde_json::to_string(&self.nonce).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        let s = serde_json::to_string(&self.timestamp).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        let s = serde_json::to_string(&self.version).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        for ti in &self.tx_inputs_ext {
+            let s = serde_json::to_string(&ti).map_err(Error::custom)?;
+            j.push_str(&s);
+        }
+
+        for ti in &self.tx_outputs_ext {
+            let s = serde_json::to_string(&ti).map_err(Error::custom)?;
+            j.push_str(&s);
+        }
+
+        let s = serde_json::to_string(&self.contract_requests).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        let s = serde_json::to_string(&self.initiator).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        let s = serde_json::to_string(&self.auth_require).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        if self.include_signes {
+            let s = serde_json::to_string(&self.initiator_signs).map_err(Error::custom)?;
+            j.push_str(&s);
+            j.push('\n');
+
+            let s = serde_json::to_string(&self.auth_require_signs).map_err(Error::custom)?;
+            j.push_str(&s);
+            j.push('\n');
+
+            if self.xuper_sign.is_some() {
+                //TODO BUG
+                let s = serde_json::to_string(&self.auth_require_signs).map_err(Error::custom)?;
+                j.push_str(&s);
+                j.push('\n');
+            }
+        }
+
+        let s = serde_json::to_string(&self.coinbase).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        let s = serde_json::to_string(&self.autogen).map_err(Error::custom)?;
+        j.push_str(&s);
+        j.push('\n');
+
+        if self.version > 2 {
+            let s = serde_json::to_string(&self.HD_info).map_err(Error::custom)?;
+            j.push_str(&s);
+            j.push('\n');
+        }
+
+        j.serialize(serializer)
+    }
+}
+
+impl From<&xchain::Transaction> for TransactionDef {
     fn from(tx: &xchain::Transaction) -> Self {
-        TransactionDefWithSigns {
+        TransactionDef {
+            include_signes: false,
             tx_inputs: tx
                 .tx_inputs
                 .clone()
@@ -249,45 +371,6 @@ impl From<&xchain::Transaction> for TransactionDefWithSigns {
     }
 }
 
-impl From<&xchain::Transaction> for TransactionDef {
-    fn from(tx: &xchain::Transaction) -> Self {
-        TransactionDef {
-            tx_inputs: tx
-                .tx_inputs
-                .clone()
-                .into_vec()
-                .iter()
-                .map(|x| TxInputDef::from(x))
-                .collect(),
-            tx_outputs: tx.tx_outputs.clone().into_vec(),
-            desc: tx.desc.clone(),
-            nonce: tx.nonce.to_owned(),
-            timestamp: tx.timestamp,
-            version: tx.version,
-            tx_inputs_ext: tx
-                .tx_inputs_ext
-                .clone()
-                .into_vec()
-                .iter()
-                .map(|x| TxInputExtDef::from(x))
-                .collect(),
-            tx_outputs_ext: tx
-                .tx_outputs_ext
-                .clone()
-                .into_vec()
-                .iter()
-                .map(|x| TxOutputExtDef::from(x))
-                .collect(),
-            contract_requests: tx.contract_requests.clone().into_vec(),
-            initiator: tx.initiator.to_owned(),
-            auth_require: tx.auth_require.clone().into_vec(),
-            coinbase: tx.coinbase,
-            autogen: tx.autogen,
-            HD_info: tx.HD_info.clone().into_option(),
-        }
-    }
-}
-
 pub fn make_tx_digest_hash(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let d = TransactionDef::from(tx);
     let d = serde_json::to_string(&d)?;
@@ -296,7 +379,9 @@ pub fn make_tx_digest_hash(tx: &xchain::Transaction) -> Result<Vec<u8>> {
 }
 
 pub fn make_transaction_id(tx: &xchain::Transaction) -> Result<Vec<u8>> {
-    let d = TransactionDefWithSigns::from(tx);
+    let mut d = TransactionDef::from(tx);
+    d.include_signes = true;
+
     let d = serde_json::to_string(&d)?;
     println!("make_transaction_id: {:?}", d);
     Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
