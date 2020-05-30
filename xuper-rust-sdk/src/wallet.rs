@@ -96,7 +96,7 @@ where
     Ok(())
 }
 
-fn encode_empty_array<S, T>(arr: &Vec<T>, buf: &mut String) -> std::result::Result<(), S::Error>
+fn encode_array<S, T>(arr: &Vec<T>, buf: &mut String) -> std::result::Result<(), S::Error>
 where
     S: serde::ser::Serializer,
     T: serde::ser::Serialize,
@@ -274,7 +274,7 @@ impl Serialize for TransactionDef {
             j.push_str(&s);
         }
 
-        encode_empty_array::<S, xchain::TxOutput>(&self.tx_outputs, &mut j)?;
+        encode_array::<S, xchain::TxOutput>(&self.tx_outputs, &mut j)?;
 
         encode_bytes::<S>(&self.desc, &mut j)?;
 
@@ -300,17 +300,17 @@ impl Serialize for TransactionDef {
             j.push_str(&s);
         }
 
-        encode_empty_array::<S, xchain::InvokeRequest>(&self.contract_requests, &mut j)?;
+        encode_array::<S, xchain::InvokeRequest>(&self.contract_requests, &mut j)?;
 
         let s = serde_json::to_string(&self.initiator).map_err(Error::custom)?;
         j.push_str(&s);
         j.push('\n');
 
-        encode_empty_array::<S, String>(&self.auth_require, &mut j)?;
+        encode_array::<S, String>(&self.auth_require, &mut j)?;
 
         if self.include_signes {
-            encode_empty_array::<S, xchain::SignatureInfo>(&self.initiator_signs, &mut j)?;
-            encode_empty_array::<S, xchain::SignatureInfo>(&self.auth_require_signs, &mut j)?;
+            encode_array::<S, xchain::SignatureInfo>(&self.initiator_signs, &mut j)?;
+            encode_array::<S, xchain::SignatureInfo>(&self.auth_require_signs, &mut j)?;
 
             if self.xuper_sign.is_some() {
                 //TODO BUG
