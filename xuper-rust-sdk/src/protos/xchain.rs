@@ -19665,6 +19665,7 @@ impl ::protobuf::reflect::ProtobufValue for TxOutputExt {
 pub struct SignatureInfo {
     // message fields
     pub PublicKey: ::std::string::String,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
     pub Sign: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]

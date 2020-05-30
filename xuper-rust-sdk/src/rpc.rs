@@ -276,6 +276,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         signature_info.set_PublicKey(self.account.public_key());
         signature_info.set_Sign(sig);
         let signature_infos = vec![signature_info; 1];
+        println!("signature_infos: {:?}", signature_infos);
         tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));
 
         tx.set_txid(super::wallet::make_transaction_id(&tx)?);
