@@ -123,3 +123,39 @@ pub fn query_contract(
     let sess = rpc::Session::new(client, account, &msg);
     sess.pre_exec()
 }
+
+#[cfg(test)]
+mod tests {
+
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_contract() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("key/private.key");
+        let acc = super::wallet::Account::new(
+            d.to_str().unwrap(),
+            "counter327861",
+            "XC1111111111000000@xuper",
+        );
+        let bcname = String::from("xuper");
+        let chain = super::rpc::ChainClient::new(&bcname);
+        let mn = String::from("increase");
+        let mut args = HashMap::new();
+        args.insert(String::from("key"), String::from("counter").into_bytes());
+
+        let txid = super::invoke_contract(&acc, &chain, &mn, args).expect("invoke contract");
+        //assert_eq!(res.is_ok(), true);
+        //let txid = res.unwrap();
+        println!("contract txid: {:?}", txid);
+
+        /*
+        let msg: crate::rpc::Message = Default::default();
+        let sess = crate::rpc::Session::new(&chain, &acc, &msg);
+        let res = sess.query_tx(&txid);
+        assert_eq!(res.is_ok(), true);
+        println!("{:?}", res.unwrap());
+        */
+    }
+}

@@ -94,7 +94,18 @@ mod tests {
         let fee = "0".to_string();
         let desc = "test duanbing".to_string();
 
-        let res = super::transfer(&acc, &chain, &to, &amount, &fee, &desc).unwrap();
-        println!("{:?}", res);
+        let res = super::transfer(&acc, &chain, &to, &amount, &fee, &desc);
+        assert_eq!(res.is_ok(), true);
+        let txid = res.unwrap();
+        println!("txid: {:?}", txid);
+
+        /*
+        let msg: crate::rpc::Message = Default::default();
+        let sess = crate::rpc::Session::new(&chain, &acc, &msg);
+        //TODO  查询不到交易信息
+        let res = sess.query_tx(&txid);
+        assert_eq!(res.is_ok(), true);
+        println!("{:?}", res.unwrap());
+        */
     }
 }

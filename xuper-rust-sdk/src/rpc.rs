@@ -94,6 +94,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         endorser_request.set_BcName(self.client.chain_name.to_owned());
         endorser_request.set_RequestData(request_data.into_bytes());
         let resp = self.call(endorser_request)?;
+        println!("pre_exec_with_select_utxo: {:?}", resp);
 
         let pre_exec_with_select_utxo_resp: xchain::PreExecWithSelectUTXOResponse =
             serde_json::from_slice(&resp.ResponseData)?;
@@ -339,7 +340,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
     pub fn query_tx(&self, txid: &String) -> Result<xchain::TxStatus> {
         let mut tx_status = xchain::TxStatus::new();
         tx_status.set_bcname(self.client.chain_name.to_owned());
-        tx_status.set_txid(hex::decode(txid).unwrap());
+        tx_status.set_txid(hex::decode(txid)?);
         let resp = self
             .client
             .xchain

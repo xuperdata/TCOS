@@ -89,6 +89,13 @@ impl From<u32> for Error {
     }
 }
 
+impl From<hex::FromHexError> for Error {
+    #[inline]
+    fn from(err: hex::FromHexError) -> Error {
+        Error::new(ErrorKind::ParseError, err)
+    }
+}
+
 impl From<grpc::Error> for Error {
     #[inline]
     fn from(err: grpc::Error) -> Error {

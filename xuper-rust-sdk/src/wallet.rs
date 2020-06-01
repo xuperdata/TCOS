@@ -5,7 +5,8 @@ use rand_core::{RngCore, SeedableRng};
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
 /// 唯一可以调用xchain_crypto的地方
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::collections::{BTreeMap, HashMap};
 use xchain_crypto::sign::ecdsa::KeyPair;
 
 /// 加载钱包地址或者加载enclave
@@ -123,6 +124,17 @@ where
 
 fn is_zero(t: &i64) -> bool {
     t == &0
+}
+
+pub fn serialize_ordered_map<S>(
+    value: &HashMap<String, Vec<u8>>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let ordered: BTreeMap<_, _> = value.iter().collect();
+    ordered.serialize(serializer)
 }
 
 #[derive(Serialize, Deserialize, Debug)]

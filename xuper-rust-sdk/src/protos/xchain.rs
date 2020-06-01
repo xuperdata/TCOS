@@ -18250,6 +18250,7 @@ pub struct InvokeRequest {
     pub module_name: ::std::string::String,
     pub contract_name: ::std::string::String,
     pub method_name: ::std::string::String,
+    #[serde(serialize_with = "crate::wallet::serialize_ordered_map")]
     pub args: ::std::collections::HashMap<::std::string::String, ::std::vec::Vec<u8>>,
     pub resource_limits: ::protobuf::RepeatedField<ResourceLimit>,
     pub amount: ::std::string::String,
