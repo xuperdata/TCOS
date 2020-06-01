@@ -4333,6 +4333,8 @@ pub struct TxInput {
     // message fields
     pub ref_txid: ::std::vec::Vec<u8>,
     pub ref_offset: i32,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub from_addr: ::std::vec::Vec<u8>,
     pub amount: ::std::vec::Vec<u8>,
     pub frozen_height: i64,
@@ -4651,7 +4653,11 @@ impl ::protobuf::reflect::ProtobufValue for TxInput {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct TxOutput {
     // message fields
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub amount: ::std::vec::Vec<u8>,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub to_addr: ::std::vec::Vec<u8>,
     pub frozen_height: i64,
     // special fields
@@ -10285,30 +10291,22 @@ impl ::protobuf::reflect::ProtobufValue for RawUrl {
     }
 }
 
-use serde::{de, de::Deserializer, ser::Serializer, Deserialize, Serialize};
-
-fn bytes_deserialize<'de, D>(deserializer: D) -> std::result::Result<Vec<u8>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use std::str::FromStr;
-    let s = String::deserialize(deserializer)?;
-    let b = s.into_bytes();
-    Ok(b)
-}
-
 #[derive(PartialEq,Clone,Default)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct Utxo {
     // message fields
-    #[serde(deserialize_with = "bytes_deserialize")]
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub amount: ::std::vec::Vec<u8>,
-    #[serde(deserialize_with = "bytes_deserialize")]
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub toAddr: ::std::vec::Vec<u8>,
     #[serde(default)]
-    #[serde(deserialize_with = "bytes_deserialize")]
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub toPubkey: ::std::vec::Vec<u8>,
-    #[serde(deserialize_with = "bytes_deserialize")]
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub refTxid: ::std::vec::Vec<u8>,
     #[serde(default)]
     pub refOffset: i32,

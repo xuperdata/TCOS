@@ -89,6 +89,13 @@ impl From<u32> for Error {
     }
 }
 
+impl From<grpc::Error> for Error {
+    #[inline]
+    fn from(err: grpc::Error) -> Error {
+        Error::new(ErrorKind::ParseError, err)
+    }
+}
+
 impl From<serde_json::Error> for Error {
     #[inline]
     fn from(err: serde_json::Error) -> Error {

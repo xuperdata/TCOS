@@ -76,7 +76,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
             .endorser
             .endorser_call(grpc::RequestOptions::new(), r)
             .drop_metadata();
-        Ok(executor::block_on(resp).unwrap())
+        Ok(executor::block_on(resp)?)
     }
     fn check_resp_code(&self, resp: &[xchain::ContractResponse]) -> Result<()> {
         for i in resp.iter() {
@@ -141,7 +141,9 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         if !to.is_empty() && amount.as_str() != "0" {
             let mut t = xchain::TxOutput::new();
             t.set_to_addr(to.clone().into_bytes());
-            t.set_amount(amount.clone().into_bytes());
+            let am = num_bigint::BigInt::from_str(amount)
+                .map_err(|_| Error::from(ErrorKind::ParseError))?;
+            t.set_amount(am.to_bytes_be().1);
             tx_outputs.push(t);
         }
         if !fee.is_empty() && fee != "0" {
@@ -189,7 +191,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         let mut tx = xchain::Transaction::new();
         tx.set_desc(vec![]);
         tx.set_version(super::consts::TXVersion);
-        tx.set_coinbase(true);
+        tx.set_coinbase(false);
         tx.set_timestamp(super::consts::now_as_nanos());
         tx.set_tx_inputs(protobuf::RepeatedField::from_vec(tx_inputs));
         tx.set_tx_outputs(protobuf::RepeatedField::from_vec(tx_outputs));
@@ -276,13 +278,13 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         signature_info.set_PublicKey(self.account.public_key());
         signature_info.set_Sign(sig);
         let signature_infos = vec![signature_info; 1];
-        println!("signature_infos: {:?}", signature_infos);
         tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));
 
         tx.set_txid(super::wallet::make_transaction_id(&tx)?);
         Ok(tx)
     }
 
+    // TODO BUG
     pub fn compliance_check(
         &self,
         tx: &xchain::Transaction,

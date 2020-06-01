@@ -27,8 +27,6 @@ pub fn transfer(
         1
     ];
 
-    // make Header
-    let header = xchain::Header::new();
     let endorser_fee = config::CONFIG
         .read()
         .unwrap()
@@ -47,8 +45,8 @@ pub fn transfer(
     }
 
     let mut invoke_rpc_request = xchain::InvokeRPCRequest::new();
-    invoke_rpc_request.set_header(header);
     invoke_rpc_request.set_bcname(chain.chain_name.to_owned());
+    invoke_rpc_request.set_requests(protobuf::RepeatedField::from_vec(vec![]));
     invoke_rpc_request.set_initiator(account.address.to_owned());
     invoke_rpc_request.set_auth_require(protobuf::RepeatedField::from_vec(auth_requires.clone()));
 
@@ -84,8 +82,11 @@ mod tests {
     fn test_transfer() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         d.push("key/private.key");
-        let acc =
-            super::wallet::Account::new(d.to_str().unwrap(), "counter", "XC1111111111000000@xuper");
+        let acc = super::wallet::Account::new(
+            d.to_str().unwrap(),
+            "counter3",
+            "XC1111111111000000@xuper",
+        );
         let to = "dpzuVdosQrF2kmzumhVeFQZa1aYcdgFpN".to_string();
         let bcname = String::from("xuper");
         let chain = super::rpc::ChainClient::new(&bcname);

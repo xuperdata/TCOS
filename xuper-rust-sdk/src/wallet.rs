@@ -5,7 +5,7 @@ use rand_core::{RngCore, SeedableRng};
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
 /// 唯一可以调用xchain_crypto的地方
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use xchain_crypto::sign::ecdsa::KeyPair;
 
 /// 加载钱包地址或者加载enclave
@@ -34,7 +34,6 @@ impl Account {
 
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path)?;
-        //let alg = &xchain_crypto::sign::ecdsa::ECDSA_P256_SHA256_ASN1;
         Ok(p.sign(msg)?.as_ref().to_vec())
     }
 
@@ -48,7 +47,7 @@ impl Account {
 
     pub fn public_key(&self) -> String {
         let p = xchain_crypto::account::get_ecdsa_private_key_from_file(&self.path).unwrap();
-        xchain_crypto::account::json_key::get_ecdsa_public_key_json_format(&p).unwrap()
+        xchain_crypto::account::json_key::get_ecdsa_public_key_json_format_in_go(&p).unwrap()
     }
 
     // TODO  把其他所有crypto相关的操作移动到这里
@@ -91,6 +90,16 @@ where
     }
     let b64 = base64::encode(v);
     serializer.serialize_str(&b64)
+}
+
+pub fn deserialize_bytes<'de, D>(deserializer: D) -> std::result::Result<Vec<u8>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::Error;
+    let s = String::deserialize(deserializer)?;
+    let b64 = base64::decode(s).map_err(Error::custom)?;
+    Ok(b64)
 }
 
 fn encode_array<T>(arr: &Vec<T>, buf: &mut String) -> Result<()>
@@ -237,15 +246,6 @@ impl TransactionDef {
         let s = serde_json::to_string(&self.tx_outputs)?;
         j.push_str(&s);
         j.push('\n');
-        /*
-        for ti in &self.tx_outputs {
-            encode_bytes(&ti.amount, &mut j)?;
-            encode_bytes(&ti.to_addr, &mut j)?;
-            let s = serde_json::to_string(&ti.frozen_height)?;
-            j.push_str(&s);
-            j.push('\n');
-        }
-        */
 
         encode_bytes(&self.desc, &mut j)?;
 
@@ -283,6 +283,7 @@ impl TransactionDef {
         }
 
         //TODO map should be sorted by trie
+        // map 按照key的字母顺序排列
         encode_array::<xchain::InvokeRequest>(&self.contract_requests, &mut j)?;
 
         let s = serde_json::to_string(&self.initiator)?;
@@ -367,14 +368,15 @@ impl From<&xchain::Transaction> for TransactionDef {
 
 pub fn make_tx_digest_hash(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let d = TransactionDef::from(tx);
-    let d = d.serialize().unwrap();
-    Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
+    let d = d.serialize()?;
+    //notice: cryptos  do digest once default
+    Ok(xchain_crypto::hash::hash::sha256(d.as_bytes()))
 }
 
 pub fn make_transaction_id(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let mut d = TransactionDef::from(tx);
     d.include_signes = true;
-    let d = d.serialize().unwrap();
+    let d = d.serialize()?;
     println!("make_transaction_id: {}", d);
     Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
 }
