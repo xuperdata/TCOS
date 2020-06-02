@@ -18250,7 +18250,8 @@ pub struct InvokeRequest {
     pub module_name: ::std::string::String,
     pub contract_name: ::std::string::String,
     pub method_name: ::std::string::String,
-    #[serde(serialize_with = "crate::wallet::serialize_ordered_map")]
+    //#[serde(serialize_with = "crate::wallet::serialize_ordered_map")]
+    //#[serde(deserialize_with = "crate::wallet::deserialize_ordered_map")]
     pub args: ::std::collections::HashMap<::std::string::String, ::std::vec::Vec<u8>>,
     pub resource_limits: ::protobuf::RepeatedField<ResourceLimit>,
     pub amount: ::std::string::String,
@@ -18631,10 +18632,12 @@ pub struct InvokeResponse {
     #[serde(default)]
     pub outputs: ::protobuf::RepeatedField<TxOutputExt>,
     #[serde(default)]
+    #[serde(serialize_with = "crate::wallet::serialize_bytes_arr")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes_arr")]
     pub response: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
     #[serde(default)]
     pub gas_used: i64,
-    #[serde(default)]
+    #[serde(skip)]
     pub requests: ::protobuf::RepeatedField<InvokeRequest>,
     #[serde(default)]
     pub responses: ::protobuf::RepeatedField<ContractResponse>,
@@ -19129,8 +19132,13 @@ impl ::protobuf::reflect::ProtobufValue for InvokeResponse {
 pub struct TxInputExt {
     // message fields
     pub bucket: ::std::string::String,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub key: ::std::vec::Vec<u8>,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub ref_txid: ::std::vec::Vec<u8>,
+    #[serde(default)]
     pub ref_offset: i32,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -19414,7 +19422,11 @@ impl ::protobuf::reflect::ProtobufValue for TxInputExt {
 pub struct TxOutputExt {
     // message fields
     pub bucket: ::std::string::String,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub key: ::std::vec::Vec<u8>,
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub value: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -23939,7 +23951,11 @@ impl ::protobuf::reflect::ProtobufValue for PreExecWithSelectUTXOResponse {
 pub struct ContractResponse {
     // message fields
     pub status: i32,
+    #[serde(default)]
     pub message: ::std::string::String,
+    #[serde(default)]
+    #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub body: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]

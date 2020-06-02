@@ -88,6 +88,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
     }
 
     pub fn pre_exec_with_select_utxo(&self) -> Result<xchain::PreExecWithSelectUTXOResponse> {
+        println!("pre_exec_with_select_utxo: {:?}", self.msg.pre_sel_utxo_req);
         let request_data = serde_json::to_string(&self.msg.pre_sel_utxo_req)?;
         let mut endorser_request = xendorser::EndorserRequest::new();
         endorser_request.set_RequestName(String::from("PreExecWithFee"));
@@ -279,7 +280,10 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         signature_info.set_PublicKey(self.account.public_key());
         signature_info.set_Sign(sig);
         let signature_infos = vec![signature_info; 1];
-        tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos));
+        tx.set_initiator_signs(protobuf::RepeatedField::from_vec(signature_infos.clone()));
+        if !self.account.contract_name.is_empty() {
+            tx.set_auth_require_signs(protobuf::RepeatedField::from_vec(signature_infos));
+        }
 
         tx.set_txid(super::wallet::make_transaction_id(&tx)?);
         Ok(tx)
@@ -301,6 +305,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         endorser_request.set_Fee(fee.clone());
         endorser_request.set_RequestData(request_data.into_bytes());
         let resp = self.call(endorser_request)?;
+        println!("compliance check: {:?}", resp);
         Ok(resp.EndorserSign.unwrap())
     }
 
@@ -313,10 +318,10 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         let resp = self
             .client
             .xchain
-            .query_tx(grpc::RequestOptions::new(), tx_status)
+            .post_tx(grpc::RequestOptions::new(), tx_status)
             .drop_metadata();
         let resp = executor::block_on(resp).unwrap();
-        if resp.header.unwrap().error != xchain::XChainErrorEnum::SUCCESS {
+        if resp.get_header().error != xchain::XChainErrorEnum::SUCCESS {
             println!("post tx failed");
             return Err(Error::from(ErrorKind::ParseError));
         }
@@ -334,6 +339,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
 
         tx.auth_require_signs.push(end_sign);
         tx.set_txid(super::wallet::make_transaction_id(&tx)?);
+        println!("tx :{:?}", tx);
         self.post_tx(&tx)?;
         Ok(hex::encode(tx.txid))
     }
@@ -348,11 +354,10 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
             .drop_metadata();
         let resp = executor::block_on(resp).unwrap();
 
-        /* TODO
-        if resp.header.unwrap().error != xchain::XChainErrorEnum::SUCCESS {
+        if resp.get_header().error != xchain::XChainErrorEnum::SUCCESS {
             println!("query tx failed");
             return Err(Error::from(ErrorKind::ChainRPCError));
-        }*/
+        }
         // TODO check txid if null
         Ok(resp)
     }

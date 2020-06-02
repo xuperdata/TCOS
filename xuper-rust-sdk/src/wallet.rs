@@ -2,11 +2,16 @@ use crate::errors::*;
 use crate::protos::xchain;
 use rand::rngs::StdRng;
 use rand_core::{RngCore, SeedableRng};
+use serde::de::{MapAccess, SeqAccess, Visitor};
+use std::marker::PhantomData;
+
+use serde::ser::SerializeSeq;
 /// 保管私钥，提供签名和验签
 /// 要在TEE里面运行
 /// 唯一可以调用xchain_crypto的地方
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
+use std::fmt;
 use xchain_crypto::sign::ecdsa::KeyPair;
 
 /// 加载钱包地址或者加载enclave
@@ -103,6 +108,121 @@ where
     Ok(b64)
 }
 
+pub fn serialize_bytes_arr<S>(
+    v: &protobuf::RepeatedField<Vec<u8>>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error>
+where
+    S: serde::ser::Serializer,
+{
+    let mut seq = serializer.serialize_seq(Some(v.len()))?;
+    for e in v.iter() {
+        let b64 = base64::encode(e);
+        seq.serialize_element(&b64)?;
+    }
+    seq.end()
+}
+
+pub fn deserialize_bytes_arr<'de, D>(
+    deserializer: D,
+) -> std::result::Result<protobuf::RepeatedField<Vec<u8>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    /*
+    struct OuterVisitor;
+
+    impl<'de> Visitor<'de> for OuterVisitor {
+        type Value = protobuf::RepeatedField<Vec<u8>>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a nonempty sequence of a sequence of numbers")
+        }
+
+        #[inline]
+        fn visit_seq<V>(self, mut visitor: V) -> std::result::Result<Self::Value, V::Error>
+        where
+            V: SeqAccess<'de>,
+        {
+            use serde::de::Error;
+            let mut vec = Vec::new();
+
+            if let None = visitor.size_hint() {
+                return Ok(protobuf::RepeatedField::from_vec(vec));
+            }
+            while let Some(Inner(elem)) = visitor.next_element().map_err(Error::custom)? {
+                println!("111111111111111111111111: {:?}", elem.clone());
+                let b64 = base64::decode(elem).map_err(Error::custom)?;
+                vec.push(b64);
+            }
+            println!("1111111111111111111111112222: {:?}", vec.clone());
+
+            Ok(protobuf::RepeatedField::from_vec(vec))
+        }
+    }
+
+    deserializer.deserialize_seq(OuterVisitor)
+    */
+    use serde::de::Error;
+    let mut vec = Vec::new();
+    let res = Vec::<u8>::deserialize(deserializer);
+    for elem in res.iter() {
+        let b64 = base64::decode(&elem).map_err(Error::custom)?;
+        println!("22222222222 {:?}", b64);
+        vec.push(b64);
+    }
+    Ok(protobuf::RepeatedField::from_vec(vec))
+}
+
+struct Inner(Vec<u8>);
+
+impl<'de> Deserialize<'de> for Inner {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Inner, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct InnerVisitor;
+
+        impl<'de> Visitor<'de> for InnerVisitor {
+            type Value = Inner;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a nonempty sequence of numbers")
+            }
+
+            #[inline]
+            fn visit_seq<V>(self, mut visitor: V) -> std::result::Result<Inner, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                use serde::de::Error;
+                let mut vec = Vec::new();
+
+                while let Some(Value(e)) = visitor.next_element().map_err(Error::custom)? {
+                    vec.push(e);
+                }
+
+                Ok(Inner(vec))
+            }
+        }
+
+        deserializer.deserialize_seq(InnerVisitor)
+    }
+}
+
+struct Value(u8);
+
+impl<'de> Deserialize<'de> for Value {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::Error;
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        s.parse().map(Value).map_err(Error::custom)
+    }
+}
+
 fn encode_array<T>(arr: &Vec<T>, buf: &mut String) -> Result<()>
 where
     T: serde::ser::Serialize,
@@ -135,6 +255,63 @@ where
 {
     let ordered: BTreeMap<_, _> = value.iter().collect();
     ordered.serialize(serializer)
+}
+
+struct MyMapVisitor<K, V> {
+    marker: PhantomData<fn() -> HashMap<K, V>>,
+}
+
+impl<K, V> MyMapVisitor<K, V> {
+    fn new() -> Self {
+        MyMapVisitor {
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'de, K, V> Visitor<'de> for MyMapVisitor<K, V>
+where
+    K: Deserialize<'de> + std::hash::Hash + std::cmp::Eq,
+    V: Deserialize<'de> + AsRef<[u8]>,
+{
+    // The type that our Visitor is going to produce.
+    type Value = HashMap<K, V>;
+
+    // Format a message stating what data this Visitor expects to receive.
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a very special map")
+    }
+
+    // Deserialize MyMap from an abstract "map" provided by the
+    // Deserializer. The MapAccess input is a callback provided by
+    // the Deserializer to let us see each entry in the map.
+    fn visit_map<M>(self, mut access: M) -> std::result::Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        use serde::de::Error;
+        let mut map = HashMap::with_capacity(access.size_hint().unwrap_or(0));
+        println!("xxxxxxx {:?}", map.len());
+
+        // While there are entries remaining in the input, add them
+        // into our map.
+        while let Some((key, value)) = access.next_entry()? {
+            let b64 = base64::decode(&value).map_err(Error::custom)?;
+            println!("xxxxxxx {:?}", b64);
+            map.insert(key, value);
+        }
+
+        Ok(map)
+    }
+}
+
+pub fn deserialize_ordered_map<'de, D>(
+    deserializer: D,
+) -> std::result::Result<HashMap<String, Vec<u8>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserializer.deserialize_map(MyMapVisitor::<String, Vec<u8>>::new())
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -310,7 +487,6 @@ impl TransactionDef {
 
             if self.xuper_sign.is_some() {
                 //TODO BUG
-                println!("wocacacaca");
                 let s = serde_json::to_string(&self.auth_require_signs)?;
                 j.push_str(&s);
                 j.push('\n');

@@ -84,7 +84,7 @@ mod tests {
         d.push("key/private.key");
         let acc = super::wallet::Account::new(
             d.to_str().unwrap(),
-            "counter3",
+            Default::default(),
             "XC1111111111000000@xuper",
         );
         let to = "dpzuVdosQrF2kmzumhVeFQZa1aYcdgFpN".to_string();
@@ -95,17 +95,16 @@ mod tests {
         let desc = "test duanbing".to_string();
 
         let res = super::transfer(&acc, &chain, &to, &amount, &fee, &desc);
+        println!("transfer res: {:?}", res);
         assert_eq!(res.is_ok(), true);
         let txid = res.unwrap();
         println!("txid: {:?}", txid);
 
-        /*
         let msg: crate::rpc::Message = Default::default();
         let sess = crate::rpc::Session::new(&chain, &acc, &msg);
         //TODO  查询不到交易信息
         let res = sess.query_tx(&txid);
         assert_eq!(res.is_ok(), true);
         println!("{:?}", res.unwrap());
-        */
     }
 }

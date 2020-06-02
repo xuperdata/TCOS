@@ -130,7 +130,6 @@ mod tests {
     use std::collections::HashMap;
     use std::path::PathBuf;
 
-    #[test]
     fn test_contract() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         d.push("key/private.key");
@@ -146,16 +145,12 @@ mod tests {
         args.insert(String::from("key"), String::from("counter").into_bytes());
 
         let txid = super::invoke_contract(&acc, &chain, &mn, args).expect("invoke contract");
-        //assert_eq!(res.is_ok(), true);
-        //let txid = res.unwrap();
         println!("contract txid: {:?}", txid);
 
-        /*
         let msg: crate::rpc::Message = Default::default();
         let sess = crate::rpc::Session::new(&chain, &acc, &msg);
         let res = sess.query_tx(&txid);
         assert_eq!(res.is_ok(), true);
         println!("{:?}", res.unwrap());
-        */
     }
 }
