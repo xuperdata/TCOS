@@ -113,14 +113,17 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         total_need: &num_bigint::BigInt,
     ) -> Result<(Vec<xchain::TxInput>, xchain::TxOutput)> {
         let mut tx_inputs = std::vec::Vec::<xchain::TxInput>::new();
+        println!("generate_tx_input: {:?}", utxo_output);
         for utxo in utxo_output.utxoList.iter() {
             let mut ti = xchain::TxInput::new();
             ti.set_ref_txid(utxo.refTxid.clone());
+            println!("fucn!!!!!!!!!!!!!!!! {:?}", utxo.refOffset);
             ti.set_ref_offset(utxo.refOffset);
             ti.set_from_addr(utxo.toAddr.clone());
             ti.set_amount(utxo.amount.clone());
             tx_inputs.push(ti);
         }
+        println!("generate_tx_input: {:?}", tx_inputs);
 
         let utxo_total = num_bigint::BigInt::from_str(&utxo_output.totalSelected).unwrap();
 
@@ -169,6 +172,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
                 .compliance_check_endorse_service_fee as i64,
         )
         .ok_or(Error::from(ErrorKind::ParseError))?;
+        println!("gen_compliance_check_tx: {:?}", resp);
         let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), &total_need)?;
         let mut tx_outputs = self.generate_tx_output(
             &config::CONFIG
@@ -219,6 +223,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         resp: &xchain::PreExecWithSelectUTXOResponse,
         cctx: &xchain::Transaction,
     ) -> Result<xchain::Transaction> {
+        println!("gen real tx {:?}", resp);
         let mut tx_outputs =
             self.generate_tx_output(&self.msg.to, &self.msg.amount, &self.msg.fee)?;
 
@@ -304,6 +309,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         endorser_request.set_BcName(self.client.chain_name.to_owned());
         endorser_request.set_Fee(fee.clone());
         endorser_request.set_RequestData(request_data.into_bytes());
+        println!("compliance check: {:?}", endorser_request);
         let resp = self.call(endorser_request)?;
         println!("compliance check: {:?}", resp);
         Ok(resp.EndorserSign.unwrap())
@@ -322,7 +328,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
             .drop_metadata();
         let resp = executor::block_on(resp).unwrap();
         if resp.get_header().error != xchain::XChainErrorEnum::SUCCESS {
-            println!("post tx failed");
+            println!("post tx failed, {:?}", resp);
             return Err(Error::from(ErrorKind::ParseError));
         }
         Ok(())
@@ -332,12 +338,15 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         &self,
         pre_exec_resp: &mut xchain::PreExecWithSelectUTXOResponse,
     ) -> Result<String> {
-        let mut ttt = pre_exec_resp.clone();
-        let cctx = self.gen_compliance_check_tx(&mut ttt)?;
-        let mut tx = self.gen_real_tx(&ttt, &cctx)?;
+        println!("tx pre_exec_resp: {:?}", pre_exec_resp);
+        let cctx = self.gen_compliance_check_tx(pre_exec_resp)?;
+        println!("tx gen_compliance_check_tx: {:?}", cctx);
+        let mut tx = self.gen_real_tx(&pre_exec_resp, &cctx)?;
+        println!("tx before compliance check: {:?}", tx);
         let end_sign = self.compliance_check(&tx, &cctx)?;
 
         tx.auth_require_signs.push(end_sign);
+        println!("tx before compliance check 222: {:?}", tx);
         tx.set_txid(super::wallet::make_transaction_id(&tx)?);
         println!("tx :{:?}", tx);
         self.post_tx(&tx)?;

@@ -58,7 +58,7 @@ pub fn transfer(
 
     let msg = rpc::Message {
         to: to.to_owned(),
-        fee: fee.to_owned().to_string(),
+        fee: fee.to_string(),
         desc: desc.to_owned(),
         pre_sel_utxo_req: pre_sel_utxo_req,
         invoke_rpc_req: invoke_rpc_request,
@@ -90,7 +90,7 @@ mod tests {
         let to = "dpzuVdosQrF2kmzumhVeFQZa1aYcdgFpN".to_string();
         let bcname = String::from("xuper");
         let chain = super::rpc::ChainClient::new(&bcname);
-        let amount = "401".to_string();
+        let amount = "1401".to_string();
         let fee = "0".to_string();
         let desc = "test duanbing".to_string();
 

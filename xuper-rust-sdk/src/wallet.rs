@@ -246,6 +246,10 @@ fn is_zero(t: &i64) -> bool {
     t == &0
 }
 
+pub fn is_empty<T>(t: &protobuf::RepeatedField<T>) -> bool {
+    t.is_empty()
+}
+
 pub fn serialize_ordered_map<S>(
     value: &HashMap<String, Vec<u8>>,
     serializer: S,
@@ -471,7 +475,6 @@ impl TransactionDef {
             encode_bytes(&toe.value, &mut j).unwrap();
         }
 
-        //TODO map should be sorted by trie
         // map 按照key的字母顺序排列
         encode_array::<xchain::InvokeRequest>(&self.contract_requests, &mut j)?;
 

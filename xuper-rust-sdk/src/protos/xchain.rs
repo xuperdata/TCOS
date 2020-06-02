@@ -5110,6 +5110,7 @@ pub struct Transaction {
     pub txid: ::std::vec::Vec<u8>,
     pub blockid: ::std::vec::Vec<u8>,
     pub tx_inputs: ::protobuf::RepeatedField<TxInput>,
+    #[serde(skip_serializing_if = "crate::wallet::is_empty")]
     pub tx_outputs: ::protobuf::RepeatedField<TxOutput>,
     pub desc: ::std::vec::Vec<u8>,
     pub coinbase: bool,
@@ -5119,10 +5120,14 @@ pub struct Transaction {
     pub autogen: bool,
     pub tx_inputs_ext: ::protobuf::RepeatedField<TxInputExt>,
     pub tx_outputs_ext: ::protobuf::RepeatedField<TxOutputExt>,
+    #[serde(skip_serializing_if = "crate::wallet::is_empty")]
     pub contract_requests: ::protobuf::RepeatedField<InvokeRequest>,
     pub initiator: ::std::string::String,
+    #[serde(skip_serializing_if = "crate::wallet::is_empty")]
     pub auth_require: ::protobuf::RepeatedField<::std::string::String>,
+    #[serde(skip_serializing_if = "crate::wallet::is_empty")]
     pub initiator_signs: ::protobuf::RepeatedField<SignatureInfo>,
+    #[serde(skip_serializing_if = "crate::wallet::is_empty")]
     pub auth_require_signs: ::protobuf::RepeatedField<SignatureInfo>,
     pub received_timestamp: i64,
     pub xuper_sign: ::protobuf::SingularPtrField<XuperSignature>,
@@ -19677,6 +19682,7 @@ pub struct SignatureInfo {
     // message fields
     pub PublicKey: ::std::string::String,
     #[serde(serialize_with = "crate::wallet::serialize_bytes")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_bytes")]
     pub Sign: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
