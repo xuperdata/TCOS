@@ -18255,8 +18255,8 @@ pub struct InvokeRequest {
     pub module_name: ::std::string::String,
     pub contract_name: ::std::string::String,
     pub method_name: ::std::string::String,
-    //#[serde(serialize_with = "crate::wallet::serialize_ordered_map")]
-    //#[serde(deserialize_with = "crate::wallet::deserialize_ordered_map")]
+    #[serde(serialize_with = "crate::wallet::serialize_ordered_map")]
+    #[serde(deserialize_with = "crate::wallet::deserialize_ordered_map")]
     pub args: ::std::collections::HashMap<::std::string::String, ::std::vec::Vec<u8>>,
     pub resource_limits: ::protobuf::RepeatedField<ResourceLimit>,
     pub amount: ::std::string::String,
@@ -18642,7 +18642,7 @@ pub struct InvokeResponse {
     pub response: ::protobuf::RepeatedField<::std::vec::Vec<u8>>,
     #[serde(default)]
     pub gas_used: i64,
-    #[serde(skip)]
+    #[serde(default)]
     pub requests: ::protobuf::RepeatedField<InvokeRequest>,
     #[serde(default)]
     pub responses: ::protobuf::RepeatedField<ContractResponse>,
@@ -21671,7 +21671,11 @@ impl ::protobuf::reflect::ProtobufValue for IdentityAuths {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ResourceLimit {
     // message fields
+    #[serde(rename = "type", default)]
+    #[serde(skip_serializing_if = "crate::wallet::is_CPU")]
     pub field_type: ResourceType,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "crate::wallet::is_zero")]
     pub limit: i64,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]

@@ -57,7 +57,7 @@ pub fn invoke_contract(
         pre_sel_utxo_req: pre_sel_utxo_req,
         invoke_rpc_req: invoke_rpc_request,
         auth_require: auth_requires.clone(),
-        amount: String::from("0"),
+        amount: Default::default(),
         frozen_height: 0,
         initiator: account.address.to_owned(),
     };
@@ -73,7 +73,7 @@ pub fn invoke_contract(
         pre_sel_utxo_req: Default::default(),
         invoke_rpc_req: Default::default(),
         auth_require: auth_requires,
-        amount: String::from("0"),
+        amount: Default::default(),
         frozen_height: 0,
         initiator: account.address.to_owned(),
     };
@@ -92,7 +92,6 @@ pub fn query_contract(
     invoke_req.set_contract_name(account.contract_name.to_owned());
     invoke_req.set_method_name(method_name.to_owned());
     invoke_req.set_args(args);
-    invoke_req.set_amount(String::from("0"));
     let invoke_requests = vec![invoke_req; 1];
     let mut auth_requires = vec![];
     if !account.contract_account.is_empty() {
@@ -123,7 +122,7 @@ pub fn query_contract(
         pre_sel_utxo_req: xchain::PreExecWithSelectUTXORequest::new(),
         invoke_rpc_req: invoke_rpc_request,
         auth_require: auth_requires,
-        amount: String::from("0"),
+        amount: Default::default(),
         frozen_height: 0,
         initiator: account.address.to_owned(),
     };
@@ -153,8 +152,10 @@ mod tests {
         let mut args = HashMap::new();
         args.insert(String::from("key"), String::from("counter").into_bytes());
 
-        let txid = super::invoke_contract(&acc, &chain, &mn, args).expect("invoke contract");
+        let txid = super::invoke_contract(&acc, &chain, &mn, args);
         println!("contract txid: {:?}", txid);
+        assert_eq!(txid.is_ok(), true);
+        let txid = txid.unwrap();
 
         let msg: crate::rpc::Message = Default::default();
         let sess = crate::rpc::Session::new(&chain, &acc, &msg);

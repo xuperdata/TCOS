@@ -1,12 +1,10 @@
 use futures::executor;
 /// 负责通信，运行在TEE之外
-use num_traits::FromPrimitive;
-
 use grpc::ClientStubExt;
 
+use num_traits::FromPrimitive;
 use std::ops::AddAssign;
 use std::ops::Sub;
-use std::str::FromStr;
 
 use crate::config;
 use crate::errors::{Error, ErrorKind, Result};
@@ -125,7 +123,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         }
         println!("generate_tx_input: {:?}", tx_inputs);
 
-        let utxo_total = num_bigint::BigInt::from_str(&utxo_output.totalSelected).unwrap();
+        let utxo_total = crate::consts::str_as_bigint(&utxo_output.totalSelected)?;
 
         let mut to = xchain::TxOutput::new();
         if utxo_total.cmp(total_need) == std::cmp::Ordering::Greater {
@@ -143,11 +141,11 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         fee: &str,
     ) -> Result<Vec<xchain::TxOutput>> {
         let mut tx_outputs = std::vec::Vec::<xchain::TxOutput>::new();
-        if !to.is_empty() && amount.as_str() != "0" {
+        //TODO amount > 0
+        if !to.is_empty() {
             let mut t = xchain::TxOutput::new();
             t.set_to_addr(to.clone().into_bytes());
-            let am = num_bigint::BigInt::from_str(amount)
-                .map_err(|_| Error::from(ErrorKind::ParseError))?;
+            let am = crate::consts::str_as_bigint(&amount)?;
             t.set_amount(am.to_bytes_be().1);
             tx_outputs.push(t);
         }
@@ -250,9 +248,9 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         utxo_output.set_utxoList(protobuf::RepeatedField::from_vec(utxo_list));
         utxo_output.set_totalSelected(total_selected.to_string());
 
-        let mut total_need = num_bigint::BigInt::from_str(&self.msg.amount)
-            .map_err(|_| Error::from(ErrorKind::ParseError))?;
-        total_need.add_assign(num_bigint::BigInt::from_str(&self.msg.fee).unwrap());
+        let mut total_need = crate::consts::str_as_bigint(&self.msg.amount)?;
+        let fee = crate::consts::str_as_bigint(&self.msg.fee)?;
+        total_need.add_assign(fee);
 
         let (tx_inputs, delta_tx_ouput) = self.generate_tx_input(&utxo_output, &total_need)?;
         if !delta_tx_ouput.to_addr.is_empty() {
@@ -338,18 +336,12 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         &self,
         pre_exec_resp: &mut xchain::PreExecWithSelectUTXOResponse,
     ) -> Result<String> {
-        println!("tx pre_exec_resp: {:?}", pre_exec_resp);
         let cctx = self.gen_compliance_check_tx(pre_exec_resp)?;
-        println!("tx cctx gen_compliance_check_tx: {:?}", cctx);
-        println!("tx gen_compliance_check_tx: {:?}", pre_exec_resp);
         let mut tx = self.gen_real_tx(&pre_exec_resp, &cctx)?;
-        println!("tx before compliance check: {:?}", tx);
         let end_sign = self.compliance_check(&tx, &cctx)?;
 
         tx.auth_require_signs.push(end_sign);
-        println!("tx before compliance check 222: {:?}", tx);
         tx.set_txid(super::wallet::make_transaction_id(&tx)?);
-        println!("tx :{:?}", tx);
         self.post_tx(&tx)?;
         Ok(hex::encode(tx.txid))
     }
