@@ -53,10 +53,10 @@ pub fn invoke_contract(
     let msg = rpc::Message {
         to: String::from(""),
         fee: String::from("0"),
-        desc: String::from(""),
+        desc: String::from("call from contract"),
         pre_sel_utxo_req: pre_sel_utxo_req,
         invoke_rpc_req: invoke_rpc_request,
-        auth_require: auth_requires,
+        auth_require: auth_requires.clone(),
         amount: String::from("0"),
         frozen_height: 0,
         initiator: account.address.to_owned(),
@@ -65,11 +65,19 @@ pub fn invoke_contract(
     let sess = rpc::Session::new(chain, account, &msg);
     let mut resp = sess.pre_exec_with_select_utxo()?;
 
-    /*  TODO clean some fields
-    msg.pre_sel_utxo_req = xchain::PreExecWithSelectUTXORequest::new();
-    msg.invoke_rpc_req = xchain::InvokeRPCRequest::new();
-    msg.fee = resp.response.unwrap().gas_used.to_string();
-    */
+    //TODO 代码优化
+    let msg = rpc::Message {
+        to: String::from(""),
+        fee: resp.get_response().get_gas_used().to_string(),
+        desc: String::from("call from contract"),
+        pre_sel_utxo_req: Default::default(),
+        invoke_rpc_req: Default::default(),
+        auth_require: auth_requires,
+        amount: String::from("0"),
+        frozen_height: 0,
+        initiator: account.address.to_owned(),
+    };
+    let sess = rpc::Session::new(chain, account, &msg);
     sess.gen_complete_tx_and_post(&mut resp)
 }
 
