@@ -130,6 +130,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::PathBuf;
 
+    #[test]
     fn test_contract() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         d.push("key/private.key");

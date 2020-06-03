@@ -15,6 +15,7 @@ use crate::protos::xchain_grpc;
 use crate::protos::xendorser;
 use crate::protos::xendorser_grpc;
 
+/// TODO : 去掉invoke_rpc_req和pre_sel_utxo_req，将其作为其他函数的参数
 #[derive(Default)]
 pub struct Message {
     pub to: String,
@@ -117,8 +118,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         for utxo in utxo_output.utxoList.iter() {
             let mut ti = xchain::TxInput::new();
             ti.set_ref_txid(utxo.refTxid.clone());
-            println!("ref txid : {:?}", hex::encode(utxo.refTxid.clone()));
-            println!("fucn!!!!!!!!!!!!!!!! {:?}", utxo.refOffset);
             ti.set_ref_offset(utxo.refOffset);
             ti.set_from_addr(utxo.toAddr.clone());
             ti.set_amount(utxo.amount.clone());
@@ -237,7 +236,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
                 t.set_amount(tx_output.amount.clone());
                 t.set_toAddr(tx_output.to_addr.clone());
                 t.set_refTxid(cctx.txid.clone());
-                t.set_refOffset(index.clone());
+                t.set_refOffset(index);
                 utxo_list.push(t);
                 let um = num_bigint::BigInt::from_bytes_be(
                     num_bigint::Sign::Plus,
@@ -250,7 +249,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         let mut utxo_output = xchain::UtxoOutput::new();
         utxo_output.set_utxoList(protobuf::RepeatedField::from_vec(utxo_list));
         utxo_output.set_totalSelected(total_selected.to_string());
-        println!("cccccccccccccc {:?}", utxo_output);
 
         let mut total_need = num_bigint::BigInt::from_str(&self.msg.amount)
             .map_err(|_| Error::from(ErrorKind::ParseError))?;
