@@ -43,6 +43,7 @@ pub fn transfer(
         println!("totoal_amount should be greater than amount");
         return Err(Error::from(ErrorKind::InvalidArguments));
     }
+    println!("total amount: {:?}", total_amount);
 
     let mut invoke_rpc_request = xchain::InvokeRPCRequest::new();
     invoke_rpc_request.set_bcname(chain.chain_name.to_owned());
@@ -102,7 +103,6 @@ mod tests {
 
         let msg: crate::rpc::Message = Default::default();
         let sess = crate::rpc::Session::new(&chain, &acc, &msg);
-        //TODO  查询不到交易信息
         let res = sess.query_tx(&txid);
         assert_eq!(res.is_ok(), true);
         println!("{:?}", res.unwrap());

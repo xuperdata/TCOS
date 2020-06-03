@@ -117,6 +117,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         for utxo in utxo_output.utxoList.iter() {
             let mut ti = xchain::TxInput::new();
             ti.set_ref_txid(utxo.refTxid.clone());
+            println!("ref txid : {:?}", hex::encode(utxo.refTxid.clone()));
             println!("fucn!!!!!!!!!!!!!!!! {:?}", utxo.refOffset);
             ti.set_ref_offset(utxo.refOffset);
             ti.set_from_addr(utxo.toAddr.clone());
@@ -195,7 +196,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
 
         // compose transaction
         let mut tx = xchain::Transaction::new();
-        tx.set_desc(vec![]);
+        tx.set_desc(String::from("compliance check tx").into_bytes());
         tx.set_version(super::consts::TXVersion);
         tx.set_coinbase(false);
         tx.set_timestamp(super::consts::now_as_nanos());
@@ -236,19 +237,20 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
                 t.set_amount(tx_output.amount.clone());
                 t.set_toAddr(tx_output.to_addr.clone());
                 t.set_refTxid(cctx.txid.clone());
-                t.set_refOffset(index);
+                t.set_refOffset(index.clone());
                 utxo_list.push(t);
                 let um = num_bigint::BigInt::from_bytes_be(
                     num_bigint::Sign::Plus,
                     &tx_output.amount[..],
                 );
                 total_selected.add_assign(um);
-                index += 1;
             };
+            index += 1;
         }
         let mut utxo_output = xchain::UtxoOutput::new();
         utxo_output.set_utxoList(protobuf::RepeatedField::from_vec(utxo_list));
         utxo_output.set_totalSelected(total_selected.to_string());
+        println!("cccccccccccccc {:?}", utxo_output);
 
         let mut total_need = num_bigint::BigInt::from_str(&self.msg.amount)
             .map_err(|_| Error::from(ErrorKind::ParseError))?;
@@ -340,7 +342,8 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
     ) -> Result<String> {
         println!("tx pre_exec_resp: {:?}", pre_exec_resp);
         let cctx = self.gen_compliance_check_tx(pre_exec_resp)?;
-        println!("tx gen_compliance_check_tx: {:?}", cctx);
+        println!("tx cctx gen_compliance_check_tx: {:?}", cctx);
+        println!("tx gen_compliance_check_tx: {:?}", pre_exec_resp);
         let mut tx = self.gen_real_tx(&pre_exec_resp, &cctx)?;
         println!("tx before compliance check: {:?}", tx);
         let end_sign = self.compliance_check(&tx, &cctx)?;
