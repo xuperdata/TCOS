@@ -51,8 +51,8 @@ pub fn invoke_contract(
     pre_sel_utxo_req.set_request(invoke_rpc_request.clone());
 
     let msg = rpc::Message {
-        to: String::from(""),
-        fee: String::from("0"),
+        to: Default::default(),
+        fee: Default::default(),
         desc: String::from("call from contract"),
         pre_sel_utxo_req: pre_sel_utxo_req,
         invoke_rpc_req: invoke_rpc_request,
@@ -133,7 +133,6 @@ pub fn query_contract(
 
 #[cfg(test)]
 mod tests {
-
     use std::collections::HashMap;
     use std::path::PathBuf;
 

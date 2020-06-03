@@ -11,6 +11,7 @@ A Xuperchain SDK by rust, especially for TEE(Intel SGX/ARM TZ) application.
 * InvokeResponse:  skip original reuquest
 
 
-## TODO 
-1. 检查是否所有的Vec在序列化过程中都需要base64
-2. 代码中所有的TODO
+## Test
+```
+cargo test -- --test-threads 1
+```

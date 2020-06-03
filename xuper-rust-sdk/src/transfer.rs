@@ -43,7 +43,6 @@ pub fn transfer(
         println!("totoal_amount should be greater than amount");
         return Err(Error::from(ErrorKind::InvalidArguments));
     }
-    println!("total amount: {:?}", total_amount);
 
     let mut invoke_rpc_request = xchain::InvokeRPCRequest::new();
     invoke_rpc_request.set_bcname(chain.chain_name.to_owned());

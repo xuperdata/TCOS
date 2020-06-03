@@ -240,13 +240,11 @@ where
 {
     use serde::de::Error;
     let res = deserializer.deserialize_map(MyMapVisitor::<String, String>::new())?;
-    println!("map: {:?}", res);
     let mut ret = HashMap::new();
     for (k, v) in res.iter() {
         let b64 = base64::decode(&v).map_err(Error::custom)?;
         ret.insert(k.to_string(), b64);
     }
-    println!("map: {:?}", ret);
     Ok(ret)
 }
 
@@ -422,7 +420,6 @@ impl TransactionDef {
 
             if self.xuper_sign.is_some() {
                 //TODO BUG
-                println!("fuincccccccccccc");
                 let s = serde_json::to_string(&self.auth_require_signs)?;
                 j.push_str(&s);
                 j.push('\n');
@@ -501,7 +498,6 @@ pub fn make_transaction_id(tx: &xchain::Transaction) -> Result<Vec<u8>> {
     let mut d = TransactionDef::from(tx);
     d.include_signes = true;
     let d = d.serialize()?;
-    println!("make_transaction_id: {}", d);
     Ok(xchain_crypto::hash::hash::double_sha256(d.as_bytes()))
 }
 

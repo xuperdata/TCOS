@@ -37,3 +37,10 @@ pub fn str_as_bigint(s: &str) -> Result<num_bigint::BigInt> {
     }
     num_bigint::BigInt::from_str(s).map_err(|_| Error::from(ErrorKind::ParseError))
 }
+
+pub fn print_bytes_num(s: &Vec<u8>) {
+    println!(
+        "print_bytes_num: {:?}",
+        num_bigint::BigInt::from_bytes_be(num_bigint::Sign::Plus, s).to_str_radix(10)
+    );
+}

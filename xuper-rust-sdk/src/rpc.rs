@@ -87,14 +87,12 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
     }
 
     pub fn pre_exec_with_select_utxo(&self) -> Result<xchain::PreExecWithSelectUTXOResponse> {
-        println!("pre_exec_with_select_utxo: {:?}", self.msg.pre_sel_utxo_req);
         let request_data = serde_json::to_string(&self.msg.pre_sel_utxo_req)?;
         let mut endorser_request = xendorser::EndorserRequest::new();
         endorser_request.set_RequestName(String::from("PreExecWithFee"));
         endorser_request.set_BcName(self.client.chain_name.to_owned());
         endorser_request.set_RequestData(request_data.into_bytes());
         let resp = self.call(endorser_request)?;
-        println!("pre_exec_with_select_utxo: {:?}", resp);
 
         let pre_exec_with_select_utxo_resp: xchain::PreExecWithSelectUTXOResponse =
             serde_json::from_slice(&resp.ResponseData)?;
@@ -112,7 +110,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         total_need: &num_bigint::BigInt,
     ) -> Result<(Vec<xchain::TxInput>, xchain::TxOutput)> {
         let mut tx_inputs = std::vec::Vec::<xchain::TxInput>::new();
-        println!("generate_tx_input: {:?}", utxo_output);
         for utxo in utxo_output.utxoList.iter() {
             let mut ti = xchain::TxInput::new();
             ti.set_ref_txid(utxo.refTxid.clone());
@@ -121,7 +118,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
             ti.set_amount(utxo.amount.clone());
             tx_inputs.push(ti);
         }
-        println!("generate_tx_input: {:?}", tx_inputs);
 
         let utxo_total = crate::consts::str_as_bigint(&utxo_output.totalSelected)?;
 
@@ -152,7 +148,8 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         if !fee.is_empty() && fee != "0" {
             let mut t = xchain::TxOutput::new();
             t.set_to_addr(String::from("$").into_bytes());
-            t.set_amount(fee.to_string().into_bytes());
+            let am = crate::consts::str_as_bigint(&fee)?;
+            t.set_amount(am.to_bytes_be().1);
             tx_outputs.push(t);
         }
         Ok(tx_outputs)
@@ -170,7 +167,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
                 .compliance_check_endorse_service_fee as i64,
         )
         .ok_or(Error::from(ErrorKind::ParseError))?;
-        println!("gen_compliance_check_tx: {:?}", resp);
         let (tx_inputs, tx_output) = self.generate_tx_input(resp.get_utxoOutput(), &total_need)?;
         let mut tx_outputs = self.generate_tx_output(
             &config::CONFIG
@@ -221,7 +217,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         resp: &xchain::PreExecWithSelectUTXOResponse,
         cctx: &xchain::Transaction,
     ) -> Result<xchain::Transaction> {
-        println!("gen real tx {:?}", resp);
         let mut tx_outputs =
             self.generate_tx_output(&self.msg.to, &self.msg.amount, &self.msg.fee)?;
 
@@ -246,7 +241,7 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         }
         let mut utxo_output = xchain::UtxoOutput::new();
         utxo_output.set_utxoList(protobuf::RepeatedField::from_vec(utxo_list));
-        utxo_output.set_totalSelected(total_selected.to_string());
+        utxo_output.set_totalSelected(total_selected.to_str_radix(10));
 
         let mut total_need = crate::consts::str_as_bigint(&self.msg.amount)?;
         let fee = crate::consts::str_as_bigint(&self.msg.fee)?;
@@ -256,7 +251,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         if !delta_tx_ouput.to_addr.is_empty() {
             tx_outputs.push(delta_tx_ouput);
         }
-
         let mut tx = xchain::Transaction::new();
         tx.set_desc(vec![]);
         tx.set_version(super::consts::TXVersion);
@@ -307,10 +301,18 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         endorser_request.set_BcName(self.client.chain_name.to_owned());
         endorser_request.set_Fee(fee.clone());
         endorser_request.set_RequestData(request_data.into_bytes());
-        println!("compliance check: {:?}", endorser_request);
         let resp = self.call(endorser_request)?;
-        println!("compliance check: {:?}", resp);
         Ok(resp.EndorserSign.unwrap())
+    }
+
+    #[allow(dead_code)]
+    fn print_tx(&self, tx: &xchain::Transaction) {
+        for i in tx.tx_inputs.iter() {
+            crate::consts::print_bytes_num(&i.amount);
+        }
+        for i in tx.tx_outputs.iter() {
+            crate::consts::print_bytes_num(&i.amount);
+        }
     }
 
     pub fn post_tx(&self, tx: &xchain::Transaction) -> Result<()> {
@@ -357,7 +359,6 @@ impl<'a, 'b, 'c> Session<'a, 'b, 'c> {
         let resp = executor::block_on(resp).unwrap();
 
         if resp.get_header().error != xchain::XChainErrorEnum::SUCCESS {
-            println!("query tx failed");
             return Err(Error::from(ErrorKind::ChainRPCError));
         }
         // TODO check txid if null
