@@ -30,7 +30,7 @@
 
 <center> 图1：系统架构图</center>
 
-Endorser:  基于Teaclave实现， 启动的时候完成TEE的完整性度量，跟API Server的通信部分运行在TEE外面；
+Endorser:  基于Teaclave FNS实现， 启动的时候完成TEE的完整性度量，之所以叫背书， 首先这个服务会完成自检，然后它负责去验证所有建立在当前机器上的TA的度量报告。
 
 SGX-Devices: 通过K8S DaemonSet [4]在每个节点部署, 完成EPC资源的信息汇报， Worker的调度根据EPC资源进行调度；
 
