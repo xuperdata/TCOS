@@ -26,7 +26,7 @@
 
 ## 系统架构
 
-![xuperdata (1)](/Users/duanbing/Downloads/TCOS.png)
+![arch](./TCOS.png)
 
 <center> 图1：系统架构图</center>
 
