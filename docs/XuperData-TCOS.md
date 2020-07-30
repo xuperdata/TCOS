@@ -55,7 +55,7 @@ Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加�
 
 ​	文献[3]提出了Self-attestation机制，这种机制通过在构建TA的时候，先生成公私钥对(SK, PK)，然后自发生成RA report，并将PK以及Report一起防止在X509格式的证书里面。然后实现一天类似于CA的机制对证书进行管理。那么实际远程验证的时候，先验证证书身份合法，然后验证RA report合法。 最后提出了一套基于DHT的分布式验证方案。这种方案依然需要依赖特殊的SDK在TA启动的时候进行认证，还是无法做到透明。
 
-​	在K8S里面，跨App访问有Service和Ingress两种方式， Service有多种实现，包括userspace层面转发、iptables 以及IPVS等，都是在Layer 4做转发。 Ingress的实现基本原理是在Service的基础上，增加一层7层网关。然而在实际生产中使用的时候，复杂业务会利用Ingress做基于目录的转发，较为简单的业务直接基于Service就可以满足跨App访问的需求。考虑到网络栈L4无法理解应用层的TLS或者HTTP协议包的内容，因此无法在Service层直接进行验证。
+​	在K8S里面，跨App访问有Service和Ingress两种方式， Service有多种实现，包括userspace层面转发、iptables 以及IPVS等，都是在Layer 4做转发。 Ingress的实现基本原理是在Service的基础上，增加一层7层网关。然而在实际生产中使用的时候，复杂业务会利用Ingress做基于目录的转发，较为简单的业务直接基于Service就可以满足跨App访问的需求。考虑到网络栈L4无法理解应用层的TLS或者HTTP协议包的内容，因此无法在Service层直接进行验证。因此我们通过借助于一个Endorser机制，传递信任。
 
 #### 信任链传递
 
