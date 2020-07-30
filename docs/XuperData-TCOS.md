@@ -37,11 +37,7 @@ SGX-Devices: 通过K8S DaemonSet [4]在每个节点部署, 完成EPC资源的信
 
 Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加载fsgsbase模块；
 
-
-
-业务实际部署的时候，基于Occlum构建自己的TA，然后通过K8S的客户端工具进行部署。
-
-
+​	业务实际部署的时候，基于Occlum构建自己的TA，然后通过K8S的客户端工具进行部署。
 
 ### Attestation 可信环境认证
 
@@ -59,19 +55,25 @@ Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加�
 
 #### 信任链传递
 
-由图1可以看到，信任链假设过程如下：
+首先介绍远程认证的基本思路，基本流程可以参考[2]之前的设计：
 
-1. 通过Self-Attestation获得当前SGX的报告信息，并且链接IAS完成自证；然后将生成一个X509证书（如何生成），并且将SGX Report作为放在证书的扩展字段；
+![image-20200730174647131](./ra-in-tls.png)
 
-2. 通过Mutual-Attestation完成本地TA与Endorser之间的相互认证,  TA启动的时候，通过Endorser暴露的NodeIp: Port建立走一次扩展TLS协议建立安全链接：
+<center>图2：  TLS内置远程认证</center>
 
-   1. TA先Endorser发起Clienthello消息；
-   2. Endorser回复ServerHello, 同时携带X509证书；
-   3. TA验证Endorser的证书的合法性；验证SGX Report的合法性；TA将自己的签发者的证书和TA的证书信息回复给Endorser； 
-   4. Endorser验证证书的合法性，然后远程SGX Report合法； 
-   5. 最后基于前面协商的秘钥进行用户数据传输。
+简单解释如下：
 
-   以上流程的前提是： Endorser和TA都是由一个根证书签发。
+1. TA先Endorser发起Clienthello消息；
+2. Endorser回复ServerHello, 同时携带X509证书；
+3. TA验证Endorser的证书的合法性；验证SGX Report的合法性；TA将自己的签发者的证书和TA的证书信息回复给Endorser； 
+4. Endorser验证证书的合法性，然后远程SGX Report合法； 
+5. 最后基于前面协商的秘钥进行用户数据传输。
+
+由图1可以看到，信任链建设过程如下：
+
+1. Self-Attestation： Endorser在启动之前，通过获取自身的Report信息，然后连接IAS完成一次自证；
+
+2. Mutual-Attestation： 完成本地TA与Endorser之间的相互认证,  TA启动的时候，通过Endorser暴露的NodeIp: Port完成一次双线验证，建立TLS连接，流程如图2.
 
 3. 通过Remote-Attestation建立远端的Endorser之间的认证，从而建立不同的TA之间的相互认证。 理论上，只要1和2正确建立， 步骤3的远程认证不是必要的。 因为不同的Endorser已经被安全认证过了。
 
@@ -84,8 +86,8 @@ Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加�
 ​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要对Occlum镜像增加一个pre script去完成跟Endorser的互认， Dockerfile如下:
 
 ```
-ENTRYPOINT mutual-exec   ## 默认不变
-CMD TA-start-script
+ENTRYPOINT mutual-exec   ## 统一的TA入口
+CMD TA-start-script   ## 用户启动命令
 ```
 
 另外 mutual-exec的实现如下：
@@ -98,14 +100,6 @@ CMD TA-start-script
 ```
 
 如果是基于inclavare-containers[6]进行编写，则需要考虑在container内部增加互相认证的插件，这个方案较为理想，但是需要比较细致的设计，后面专门介绍下。 
-
-
-
-#### 证书生成
-
-​	首先目前K8S不同的组件之间，包括client与API Server以及API Server跟kubelet之间都支持建立TLS链接。 通过K8S Serect我们可以默认将Kubelet使用的证书信息挂载到POD内部，不用额外生成新的证书。
-
-​	
 
 ### 任务调度
 
