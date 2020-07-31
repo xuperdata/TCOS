@@ -1,0 +1,18 @@
+[package]
+name = "fns_client"
+version = "0.1.0"
+authors = ["MesaTEE Authors <developers@mesatee.org>"]
+description = "RPC client of FNS."
+license = "Apache-2.0"
+edition = "2018"
+
+[features]
+default = ["mesalock_sgx"]
+mesalock_sgx = ["sgx_tstd", "mesatee_core/mesalock_sgx"]
+
+[dependencies]
+cfg-if          = { version = "0.1.10" }
+#mesatee_core   = { version = "0.1.0" }
+mesatee_core    = { path = "../../../mesatee_core" }
+fns_proto       = { path = "../proto" }
+sgx_tstd        = { git = "https://github.com/apache/teaclave-sgx-sdk", rev = "v1.1.2",  optional = true }
