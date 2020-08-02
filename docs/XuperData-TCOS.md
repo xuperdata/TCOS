@@ -114,13 +114,12 @@ CMD TA-start-script   ## 用户启动命令
    ```
    $ cd {{occlum source code directory}}
    $ docker run  --net=host   -it --device /dev/sgx/enclave   -v $PWD:/occlum duanbing0613/helloc bash
-   
    $ #省略步骤，按照文档5提供的样例步骤编译TA
    $ #修改start.sh的 workdir和`occlum run /bin/hello_world`命令
    $ #发布容器： docker commit & docker push
+   $ docker commit -m "init tdos demo image"  tcos   ${image_name}
+   $ docker push ${image_name}
    ```
-
-   
 
 2. 构建app.yaml, 以[app.yaml](./app.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
 
@@ -129,6 +128,14 @@ CMD TA-start-script   ## 用户启动命令
 4. 通过kubectl部署 [endorser](./endorser.yaml)
 
 5. 通过kubectl部署Step 2构建的app.yaml
+
+## 计划
+
+​	目前这个只是一个Demo，说明当前思路可行。 接下来在以下几个方面进行持续迭代：
+
+1. 将双向验证流程隐藏在Occulm启动之前完成; 
+2. 资源管理优化， 针对大内存的EPC使用的优化；
+3. 增加UI支持用户任务提交；
 
 ## 参考
 
