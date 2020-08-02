@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: endorser-dp
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: endorser
+  template:
+    metadata:
+      labels:
+        app: endorser
+    spec:
+      containers:
+      - name: endorser
+        image: xuperdata/fns-sgx-2.9.1:1.0
+        imagePullPolicy: Always
+        env:
+        - name: IAS_KEY
+          value: {{your key}}
+        - name: IAS_SPID
+          value: {{your key}}
+        - name: RUST_LOG
+          value: debug
+        resources:
+          limits:
+            cpu: 250m
+            memory: 512Mi
+            alibabacloud.com/sgx_epc_MiB: 1
+        volumeMounts:
+        - mountPath: /dev/sgx/enclave
+          name: sgxdevice
+        securityContext:
+          privileged: true
+      volumes:
+      - hostPath:
+          path: /dev/sgx/enclave
+        name: sgxdevice

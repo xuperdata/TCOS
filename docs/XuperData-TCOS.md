@@ -124,9 +124,11 @@ CMD TA-start-script   ## 用户启动命令
 
 2. 构建app.yaml, 以[app.yaml](./app.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
 
-3. 按照文档7， 部署app.yaml
+3. 按照文档7， 部署部署sgx-devices-plugin
 
+4. 通过kubectl部署 [endorser](./endorser.yaml)
 
+5. 通过kubectl部署Step 2构建的app.yaml
 
 ## 参考
 
