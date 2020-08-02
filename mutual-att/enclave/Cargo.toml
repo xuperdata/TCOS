@@ -1,0 +1,33 @@
+[package] 
+name = "run-tests-enclave"
+version = "1.0.0"
+edition = "2018"
+
+[lib]	
+name = "run_tests_enclave"	
+crate-type = ["staticlib"]
+
+[features]
+default = ["mesalock_sgx", "with-serde"]
+with-serde = []
+mesalock_sgx = ["sgx_tstd"]
+
+[dependencies]
+mesatee_sdk = { path = "../../trusted-mesatee-sdk/mesatee_sdk", package = "mesatee_sdk" }
+#base64 = { git = "https://github.com/mesalock-linux/rust-base64-sgx"}
+#rand            = { git = "https://github.com/mesalock-linux/rand-sgx", tag = "v0.7.3_sgx1.1.2" }
+#rand_core       = { git = "https://github.com/mesalock-linux/rand-sgx", tag = "v0.7.3_sgx1.1.2" }
+hex             = { git = "https://github.com/mesalock-linux/rust-hex-sgx" }
+#protobuf         = { path = "../third_party/protobuf-2.14.0", features = ["with-serde"] }
+serde_json      =  { git = "https://github.com/mesalock-linux/serde-json-sgx" }
+serde_derive    = { git = "https://github.com/mesalock-linux/serde-sgx" }
+serde           = { git = "https://github.com/mesalock-linux/serde-sgx", features = ["derive"] }
+#serde_repr      = "0.1"
+#serde_yaml      = { path = "../third_party/serde_yaml-0.8.12" }
+lazy_static     = { version = "1.2", features = ["spin_no_std"] }
+#num-bigint      = { git = "https://github.com/mesalock-linux/num-bigint-sgx", features = ["serde"] }
+#num-traits      = { git = "https://github.com/mesalock-linux/num-traits-sgx" }
+sgx_types       = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+#sgx_tcrypto     = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git"}
+sgx_tstd        = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional=true  }
+sgx_libc 	= { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git"}
