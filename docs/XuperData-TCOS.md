@@ -83,20 +83,21 @@ Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加�
 
 ​	MA的验证应该发生在启动TA对外接受实际流量之前。
 
-​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要对Occlum镜像增加一个pre script去完成跟Endorser的互认， Dockerfile如下:
+​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要对Occlum镜像增加一段前置命令去完成跟Endorser的互认:
 
 ```
-ENTRYPOINT mutual-exec   ## 统一的TA入口
-CMD TA-start-script   ## 用户启动命令
-```
+#!/bin/bash
+set -e
 
-另外 mutual-exec的实现如下：
+## mutual attesttation
+cd /root/bin
+## get IAS_* from env and start the attestation
+./run-tests
 
-```shell
-#!/bin/sh
-1. mutual ra with Endorser
-2. shift
-3. exec $@ 
+## start the app
+workdir=/root/hello_c/occlum_workspace
+cd $workdir
+occlum run /bin/hello_world
 ```
 
 如果是基于inclavare-containers[6]进行编写，则需要考虑在container内部增加互相认证的插件，这个方案较为理想，但是需要比较细致的设计，后面专门介绍下。 
@@ -104,8 +105,6 @@ CMD TA-start-script   ## 用户启动命令
 ### 任务调度
 
 ​	自定义资源SGX EPC, 参考[4].
-
-
 
 ## 测试
 
@@ -133,9 +132,11 @@ CMD TA-start-script   ## 用户启动命令
 
 ​	目前这个只是一个Demo，说明当前思路可行。 接下来在以下几个方面进行持续迭代：
 
-1. 将双向验证流程隐藏在Occulm启动之前完成; 
-2. 资源管理优化， 针对大内存的EPC使用的优化；
-3. 增加UI支持用户任务提交；
+1. 项目名字统一规划；
+2. 将双向验证流程隐藏在Occulm启动之前完成; 
+3. 资源管理优化， 针对大内存的EPC使用的优化；
+4. 增加UI支持用户任务提交；
+5. 减少TCB;
 
 ## 参考
 
