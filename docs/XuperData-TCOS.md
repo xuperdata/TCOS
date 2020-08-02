@@ -21,9 +21,9 @@
 * 本模型借助于TEE技术，保证计算过程安全；
 * 借助于多重信任链传递机制，保证跨TA可信访问；
 
-不保证： 
+不解决： 
 
-* 防止业务自身代码缺陷导致的安全漏洞；
+* 防止业务自身代码缺陷导致的安全漏洞（TCB过大问题）；
 
 ## 系统架构
 
@@ -105,6 +105,29 @@ CMD TA-start-script   ## 用户启动命令
 
 ​	自定义资源SGX EPC, 参考[4].
 
+
+
+## 测试
+
+1. 编译helloworld_c:
+
+   ```
+   $ cd {{occlum source code directory}}
+   $ docker run  --net=host   -it --device /dev/sgx/enclave   -v $PWD:/occlum duanbing0613/helloc bash
+   
+   $ #省略步骤，按照文档5提供的样例步骤编译TA
+   $ #修改start.sh的 workdir和`occlum run /bin/hello_world`命令
+   $ #发布容器： docker commit & docker push
+   ```
+
+   
+
+2. 构建app.yaml, 以[app.yaml](./app.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
+
+3. 按照文档7， 部署app.yaml
+
+
+
 ## 参考
 
 1. Yu Ding, Ran Duan et.al  Rust SGX SDK: Towards Memory Safety in Intel SGX Enclave
@@ -119,4 +142,7 @@ CMD TA-start-script   ## 用户启动命令
 
 6. https://github.com/alibaba/inclavare-containers
 
+7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship mesatee-core-standalone on K8S.md)
+
    
+
