@@ -122,7 +122,7 @@ occlum run /bin/hello_world
 
    如果仅仅是测试验证，这个流程可以省略，直接使用`duanbing0613/helloc`即可。
 
-2. 构建app.yaml, 以[app.yaml](./app.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
+2. 构建job.yaml, 以[job.yaml](./job.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
 
 3. 按照文档7， 部署sgx-devices-plugin;
 
@@ -130,7 +130,7 @@ occlum run /bin/hello_world
 
 5. 通过kubectl部署 [endorser-service](./endorser-svc.yaml): `minikube kubectl -- apply -f endorser-svc.yaml`;
 
-6. 通过kubectl部署Step 2构建的app.yaml: `minikube kubectl -- apply -f app.yaml`;
+6. 通过kubectl部署Step 2构建的job.yaml: `minikube kubectl -- apply -f job.yaml`;
 
 7. 查看运行日志：  `minikube kubectl -- logs helloc-demo-XXXX`;
 
