@@ -104,7 +104,7 @@ occlum run /bin/hello_world
 
 ### 任务调度
 
-​	自定义SGX EPC, 作为调度的资源， 参考[4].
+​	自定义SGX EPC, 作为调度的资源, 参考[4].
 
 ## 测试
 
