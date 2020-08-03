@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fns-dp
+  name: helloc-demo 
   namespace: default
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: fns
+      app: helloc 
   template:
     metadata:
       labels:
-        app: fns
+        app: helloc 
     spec:
       containers:
-      - name: fns
+      - name: helloc 
         image: {{your helloworld}}
         imagePullPolicy: Always
         command: /root/start.sh
