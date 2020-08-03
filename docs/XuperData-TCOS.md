@@ -112,7 +112,7 @@ occlum run /bin/hello_world
 
    ```
    $ cd {{occlum source code directory}}
-   $ docker run --net=host -it --device /dev/sgx/enclave -v $PWD:/occlum duanbing0613/helloc bash
+   $ docker run --net=host -it --device /dev/sgx/enclave -v $PWD:/occlum duanbing0613/helloc:v1 bash
    $ #省略步骤，按照文档5提供的样例步骤编译TA
    $ #修改start.sh的 workdir和`occlum run /bin/hello_world`命令
    $ #发布容器： docker commit & docker push
@@ -132,7 +132,20 @@ occlum run /bin/hello_world
 
 6. 通过kubectl部署Step 2构建的job.yaml: `minikube kubectl -- apply -f job.yaml`;
 
-7. 查看运行日志：  `minikube kubectl -- logs helloc-demo-XXXX`;
+7. 查看运行情况, 名字改成实际的pod名：
+
+   ```
+   $ minikube kubectl -- get pod helloc-demo-xmvfw
+   NAME                READY   STATUS      RESTARTS   AGE
+   helloc-demo-xmvfw   0/1     Completed   0          6h54m
+   $ minikube kubectl -- logs helloc-demo-xmvfw
+   ...
+   [+] Init Enclave Successful 2!
+   done
+   Hello World
+   ```
+
+   
 
 ## 计划
 
