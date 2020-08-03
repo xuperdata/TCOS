@@ -23,7 +23,7 @@ use std::net::SocketAddr;
 lazy_static! {
     static ref USER_ID: String = String::from("user1");
     static ref USER_TOKEN: String = String::from("token1");
-    static ref FNS_ADDR: SocketAddr = "172.17.0.3:30007".parse().unwrap();
+    static ref FNS_ADDR: SocketAddr = "localhost:30007".parse().unwrap();
     static ref PUBKEY_PATH: String = String::from("auditors/godzilla/godzilla.public.der");
     static ref SIG_PATH: String = String::from("auditors/godzilla/godzilla.sign.sha256");
     static ref ENCLAVE_PATH: String = String::from("enclave_info.toml");
