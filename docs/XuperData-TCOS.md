@@ -124,15 +124,15 @@ occlum run /bin/hello_world
 
 2. 构建app.yaml, 以[app.yaml](./app.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
 
-3. 按照文档7， 部署部署sgx-devices-plugin
+3. 按照文档7， 部署sgx-devices-plugin;
 
-4. 通过kubectl部署 [endorser](./endorser.yaml):  `minikube kubectl -- apply -f endorser.yaml`
+4. 通过kubectl部署 [endorser](./endorser.yaml):  `minikube kubectl -- apply -f endorser.yaml`;
 
-5. 通过kubectl部署 [endorser-service](./endorser-svc.yaml): `minikube kubectl -- apply -f endorser-svc.yaml`
+5. 通过kubectl部署 [endorser-service](./endorser-svc.yaml): `minikube kubectl -- apply -f endorser-svc.yaml`;
 
-6. 通过kubectl部署Step 2构建的app.yaml: `minikube kubectl -- apply -f app.yaml`
+6. 通过kubectl部署Step 2构建的app.yaml: `minikube kubectl -- apply -f app.yaml`;
 
-7. 查看运行日志：  `minikube kubectl -- logs helloc-demo-XXXX`
+7. 查看运行日志：  `minikube kubectl -- logs helloc-demo-XXXX`;
 
 ## 计划
 
@@ -142,7 +142,7 @@ occlum run /bin/hello_world
 2. 双向验证流程隐藏; 
 3. 资源管理优化， 针对大内存的EPC使用的优化；
 4. 增加UI支持用户任务提交；
-5. 减少TCB;
+5. 减少关键syscall的TCB，例如SFI的引入
 
 ## 参考
 
