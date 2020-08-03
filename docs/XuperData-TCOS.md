@@ -92,7 +92,7 @@ set -e
 ## mutual attesttation
 cd /root/bin
 ## get IAS_* from env and start the attestation
-./run-tests
+./mutual-att
 
 ## start the app
 workdir=/root/hello_c/occlum_workspace
@@ -104,7 +104,7 @@ occlum run /bin/hello_world
 
 ### 任务调度
 
-​	自定义资源SGX EPC, 参考[4].
+​	自定义SGX EPC, 作为调度的资源， 参考[4].
 
 ## 测试
 
@@ -112,28 +112,34 @@ occlum run /bin/hello_world
 
    ```
    $ cd {{occlum source code directory}}
-   $ docker run  --net=host   -it --device /dev/sgx/enclave   -v $PWD:/occlum duanbing0613/helloc bash
+   $ docker run --net=host -it --device /dev/sgx/enclave -v $PWD:/occlum duanbing0613/helloc bash
    $ #省略步骤，按照文档5提供的样例步骤编译TA
    $ #修改start.sh的 workdir和`occlum run /bin/hello_world`命令
    $ #发布容器： docker commit & docker push
-   $ docker commit -m "init tdos demo image"  tcos   ${image_name}
+   $ docker commit -m "init tdos demo image" tcos  ${image_name}
    $ docker push ${image_name}
    ```
+
+   如果仅仅是测试验证，这个流程可以省略，直接使用`duanbing0613/helloc`即可。
 
 2. 构建app.yaml, 以[app.yaml](./app.yaml)为模板， 修改其中的image、IAS_KEY和SPID等字段；
 
 3. 按照文档7， 部署部署sgx-devices-plugin
 
-4. 通过kubectl部署 [endorser](./endorser.yaml)
+4. 通过kubectl部署 [endorser](./endorser.yaml):  `minikube kubectl -- apply -f endorser.yaml`
 
-5. 通过kubectl部署Step 2构建的app.yaml
+5. 通过kubectl部署 [endorser-service](./endorser-svc.yaml): `minikube kubectl -- apply -f endorser-svc.yaml`
+
+6. 通过kubectl部署Step 2构建的app.yaml: `minikube kubectl -- apply -f app.yaml`
+
+7. 查看运行日志：  `minikube kubectl -- logs helloc-demo-XXXX`
 
 ## 计划
 
 ​	目前这个只是一个Demo，说明当前思路可行。 接下来在以下几个方面进行持续迭代：
 
 1. 项目名字统一规划；
-2. 将双向验证流程隐藏在Occulm启动之前完成; 
+2. 双向验证流程隐藏; 
 3. 资源管理优化， 针对大内存的EPC使用的优化；
 4. 增加UI支持用户任务提交；
 5. 减少TCB;
