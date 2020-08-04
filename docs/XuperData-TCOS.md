@@ -100,7 +100,9 @@ cd $workdir
 occlum run /bin/hello_world
 ```
 
-如果是基于inclavare-containers[6]进行编写，则需要考虑在container内部增加互相认证的插件，这个方案较为理想，但是需要比较细致的设计，后面专门介绍下。 
+​	显然这种方案的致命缺点是双向验证无法严格保证执行。
+
+​	如果是基于inclavare-containers[6]进行编写，则需要考虑在rune中实际启动Enclave之前增加双向验证，在框架层面保证信任传递。后面单独实现。
 
 ### 任务调度
 
@@ -108,7 +110,7 @@ occlum run /bin/hello_world
 
 ## 测试
 
-1. 编译helloworld_c:
+1. 按照occlum提供的方式编译helloworld_c，按照如下步骤发布编译之后的容器：
 
    ```
    $ cd {{occlum source code directory}}
