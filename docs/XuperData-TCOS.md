@@ -173,7 +173,7 @@ occlum run /bin/hello_world
 
 6. https://github.com/alibaba/inclavare-containers
 
-7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship mesatee-core-standalone on K8S.md)
+7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship%20mesatee-core-standalone%20on%20K8S.md)
 
    
 
