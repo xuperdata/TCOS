@@ -83,7 +83,7 @@ Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加�
 
 ​	MA的验证应该发生在启动TA对外接受实际流量之前。
 
-​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要对Occlum镜像增加一段前置命令去完成跟Endorser的互认:
+​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要在Occlum镜像启动之前增加一段前置命令去完成跟Endorser的互认:
 
 ```
 #!/bin/bash
@@ -100,7 +100,7 @@ cd $workdir
 occlum run /bin/hello_world
 ```
 
-​	显然这种方案的致命缺点是双向验证无法严格保证执行。
+​	显然这种方案的致命缺点是双向验证无法严格保证执行，从而打断信任链传递。
 
 ​	如果是基于inclavare-containers[6]进行编写，则需要考虑在rune中实际启动Enclave之前增加双向验证，在框架层面保证信任传递。后面单独实现。
 
@@ -153,8 +153,8 @@ occlum run /bin/hello_world
 
 ​	目前这个只是一个Demo，说明当前思路可行。 接下来在以下几个方面进行持续迭代：
 
-1. 项目名字统一规划；
-2. 双向验证流程隐藏; 
+2. 双向验证和Occlum镜像启动放在同一个进程上下文完成；
+2. TA编译流程优化；
 3. 资源管理优化， 针对大内存的EPC使用的优化；
 4. 增加UI支持用户任务提交；
 5. 减少关键syscall的TCB，例如SFI的引入
@@ -173,7 +173,7 @@ occlum run /bin/hello_world
 
 6. https://github.com/alibaba/inclavare-containers
 
-7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship mesatee-core-standalone on K8S.md)
+7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship\ mesatee-core-standalone on K8S.md)
 
    
 
