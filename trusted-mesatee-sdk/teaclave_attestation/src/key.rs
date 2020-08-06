@@ -30,9 +30,9 @@ pub struct Secp256k1KeyPair {
 impl Secp256k1KeyPair {
     pub fn new() -> Result<Self> {
         let ecc_handle = SgxEccHandle::new();
-        ecc_handle.open()?;
-        let (prv_k, pub_k) = ecc_handle.create_key_pair()?;
-        ecc_handle.close()?;
+        ecc_handle.open().unwrap();
+        let (prv_k, pub_k) = ecc_handle.create_key_pair().unwrap();
+        ecc_handle.close().unwrap();
         Ok(Self { prv_k, pub_k })
     }
 

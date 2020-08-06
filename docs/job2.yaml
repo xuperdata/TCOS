@@ -1,0 +1,35 @@
+apiVersion: batch/v1 
+kind: Job 
+metadata:
+  name: helloc-demo
+  namespace: default
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: helloc 
+        image: duanbing0613/helloc:v1
+        command: ["/bin/bash", "-c"]
+        args: ["/root/start.sh"]
+        env:
+        - name: IAS_KEY
+          value: 62786806f8e244a18704456af827179c
+        - name: IAS_SPID
+          value: C4CE1033290C9C0571A1F31027DAC47F
+        - name: RUST_LOG
+          value: debug
+        resources:
+          limits:
+            cpu: 250m
+            memory: 512Mi
+            alibabacloud.com/sgx_epc_MiB: 2
+        volumeMounts:
+        - mountPath: /dev/sgx/enclave
+          name: sgxdevice
+        securityContext:
+          privileged: true
+      volumes:
+      - hostPath:
+          path: /dev/sgx/enclave
+        name: sgxdevice

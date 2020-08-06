@@ -30,27 +30,27 @@ use std::prelude::v1::*;
 use teaclave_utils;
 
 extern "C" {
-    fn ocall_sgx_init_quote(
+    fn occlum_ocall_sgx_init_quote(
         p_retval: *mut sgx_status_t,
         p_target_info: *mut sgx_target_info_t,
         p_gid: *mut sgx_epid_group_id_t,
     ) -> sgx_status_t;
 
-    fn ocall_sgx_calc_quote_size(
+    fn occlum_ocall_sgx_calc_quote_size(
         p_retval: *mut sgx_status_t,
         p_sig_rl: *const u8,
         sig_rl_size: u32,
         p_quote_size: *mut u32,
     ) -> sgx_status_t;
 
-    fn ocall_sgx_get_quote(
+    fn occlum_ocall_sgx_get_quote(
         p_retval: *mut sgx_status_t,
+        p_sig_rl: *const u8,
+        sig_rl_size: u32,
         p_report: *const sgx_report_t,
         quote_type: sgx_quote_sign_type_t,
         p_spid: *const sgx_spid_t,
         p_nonce: *const sgx_quote_nonce_t,
-        p_sig_rl: *const u8,
-        sig_rl_size: u32,
         p_qe_report: *mut sgx_report_t,
         p_quote: *mut u8,
         quote_size: u32,
@@ -86,7 +86,7 @@ impl IasReport {
         let mut eg: sgx_epid_group_id_t = sgx_epid_group_id_t::default();
         let mut rt: sgx_status_t = sgx_status_t::SGX_ERROR_UNEXPECTED;
 
-        let res = unsafe { ocall_sgx_init_quote(&mut rt as _, &mut ti as _, &mut eg as _) };
+        let res = unsafe { occlum_ocall_sgx_init_quote(&mut rt as _, &mut ti as _, &mut eg as _) };
 
         if res != sgx_status_t::SGX_SUCCESS || rt != sgx_status_t::SGX_SUCCESS {
             Err(Error::new(AttestationError::OCallError))
@@ -127,7 +127,7 @@ impl IasReport {
         let mut quote_len: u32 = 0;
 
         let res = unsafe {
-            ocall_sgx_calc_quote_size(&mut rt as _, p_sigrl, sigrl_len, &mut quote_len as _)
+            occlum_ocall_sgx_calc_quote_size(&mut rt as _, p_sigrl, sigrl_len, &mut quote_len as _)
         };
 
         if res != sgx_status_t::SGX_SUCCESS || rt != sgx_status_t::SGX_SUCCESS {
@@ -146,14 +146,14 @@ impl IasReport {
 
         debug!("ocall_sgx_get_quote");
         let res = unsafe {
-            ocall_sgx_get_quote(
+            occlum_ocall_sgx_get_quote(
                 &mut rt as _,
+                p_sigrl,
+                sigrl_len,
                 &report as _,
                 quote_type,
                 &spid as _,
                 &quote_nonce as _,
-                p_sigrl,
-                sigrl_len,
                 &mut qe_report as _,
                 quote.as_mut_ptr(),
                 quote_len,
