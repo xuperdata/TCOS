@@ -10,7 +10,8 @@
 git clone https://github.com/occlum/occlum
 cd occlum
 git checkout 0.13.1
-git am 0001-add-mutual-att.patch
+git am ${TCOS DIR}/0001-add-mutual-att.patch
+cp -r ${TCOS DIR}/trusted-mesatee-sdk . 
 
 docker run --net=host -it --device /dev/sgx/enclave   -v $PWD:/occlum occlum/occlum:0.13.1-ubuntu18.04 bash
 cd /occlum 
