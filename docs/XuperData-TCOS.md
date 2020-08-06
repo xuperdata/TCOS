@@ -83,7 +83,7 @@ Worker:   基于Occlum[5]运行用户的原生程序。所有的Worker需要加�
 
 ​	MA的验证应该发生在启动TA对外接受实际流量之前。
 
-​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要对Occlum镜像增加一段前置命令去完成跟Endorser的互认:
+​	这里有2种方案，如果TA是基于Occlum编写，并且运行在原生的Docker容器上的话，我们需要在Occlum镜像启动之前增加一段前置命令去完成跟Endorser的互认:
 
 ```
 #!/bin/bash
@@ -100,19 +100,21 @@ cd $workdir
 occlum run /bin/hello_world
 ```
 
-如果是基于inclavare-containers[6]进行编写，则需要考虑在container内部增加互相认证的插件，这个方案较为理想，但是需要比较细致的设计，后面专门介绍下。 
+​	显然这种方案的致命缺点是双向验证无法严格保证执行，从而打断信任链传递。
+
+​	如果是基于inclavare-containers[6]进行编写，则需要考虑在rune中实际启动Enclave之前增加双向验证，在框架层面保证信任传递。后面单独实现。
 
 ### 任务调度
 
-​	自定义SGX EPC, 作为调度的资源， 参考[4].
+​	自定义SGX EPC, 作为调度的资源, 参考[4].
 
 ## 测试
 
-1. 编译helloworld_c:
+1. 按照occlum提供的方式编译helloworld_c，按照如下步骤发布编译之后的容器：
 
    ```
    $ cd {{occlum source code directory}}
-   $ docker run --net=host -it --device /dev/sgx/enclave -v $PWD:/occlum duanbing0613/helloc bash
+   $ docker run --net=host -it --device /dev/sgx/enclave -v $PWD:/occlum duanbing0613/helloc:v1 bash
    $ #省略步骤，按照文档5提供的样例步骤编译TA
    $ #修改start.sh的 workdir和`occlum run /bin/hello_world`命令
    $ #发布容器： docker commit & docker push
@@ -132,14 +134,27 @@ occlum run /bin/hello_world
 
 6. 通过kubectl部署Step 2构建的job.yaml: `minikube kubectl -- apply -f job.yaml`;
 
-7. 查看运行日志：  `minikube kubectl -- logs helloc-demo-XXXX`;
+7. 查看运行情况, 名字改成实际的pod名：
+
+   ```
+   $ minikube kubectl -- get pod helloc-demo-xmvfw
+   NAME                READY   STATUS      RESTARTS   AGE
+   helloc-demo-xmvfw   0/1     Completed   0          6h54m
+   $ minikube kubectl -- logs helloc-demo-xmvfw
+   ...
+   [+] Init Enclave Successful 2!
+   done
+   Hello World
+   ```
+
+   
 
 ## 计划
 
 ​	目前这个只是一个Demo，说明当前思路可行。 接下来在以下几个方面进行持续迭代：
 
-1. 项目名字统一规划；
-2. 双向验证流程隐藏; 
+1. 双向验证和Occlum镜像启动放在同一个Enclave 进程/线程(TCS)上下文完成；
+2. TA编译流程优化；
 3. 资源管理优化， 针对大内存的EPC使用的优化；
 4. 增加UI支持用户任务提交；
 5. 减少关键syscall的TCB，例如SFI的引入
@@ -158,7 +173,7 @@ occlum run /bin/hello_world
 
 6. https://github.com/alibaba/inclavare-containers
 
-7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship mesatee-core-standalone on K8S.md)
+7. [Ship MCS on K8S](https://github.com/xuperdata/mesatee-core-standalone/blob/master/docs/Ship%20mesatee-core-standalone%20on%20K8S.md)
 
    
 
