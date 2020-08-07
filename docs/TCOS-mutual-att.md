@@ -1,4 +1,4 @@
-# TCOS设-双向认证
+# TCOS设计-双向认证
 
 基本原理是在occlum通过sgx_ecall创建process的时候完成双向认证。
 
